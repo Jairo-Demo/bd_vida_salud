@@ -2,6 +2,8 @@
 
 namespace Database\Factories;
 
+use App\Models\Persona;
+use App\Models\Rol;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
@@ -25,7 +27,15 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
+            // Persona 1..1 -- 0..1 Usuario y Rol 1..1 -- 0..* Usuario (obligatorios)
+            'persona_id' => fn () => Persona::create([
+                'ci' => (string) fake()->unique()->numberBetween(1000000, 99999999),
+                'nombres' => fake()->firstName(),
+                'apellidos' => fake()->lastName(),
+            ])->id,
+            'rol_id' => fn () => Rol::firstOrCreate(['nombre' => 'Administrador'])->id,
             'name' => fake()->name(),
+            'username' => fake()->unique()->userName(),
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),

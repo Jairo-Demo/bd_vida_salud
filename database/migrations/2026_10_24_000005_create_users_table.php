@@ -6,17 +6,21 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->string('email')->unique();
+            // Persona 1..1 -- 0..1 Usuario: toda cuenta pertenece a una persona y una persona tiene como maximo una cuenta
+            $table->foreignId('persona_id')->unique()->constrained('personas')->restrictOnDelete();
+            // Rol 1..1 -- 0..* Usuario: cada usuario tiene un solo rol
+            $table->foreignId('rol_id')->constrained('roles')->restrictOnDelete();
+            $table->string('name', 150);
+            $table->string('username', 50)->unique();
+            $table->string('email', 150)->unique();
             $table->timestamp('email_verified_at')->nullable();
-            $table->string('password');
+            $table->string('password', 255);
+            $table->boolean('estado')->default(true);
+            $table->timestamp('ultimo_acceso')->nullable();
             $table->rememberToken();
             $table->timestamps();
         });
@@ -37,9 +41,6 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('users');

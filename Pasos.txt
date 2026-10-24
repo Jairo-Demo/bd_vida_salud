@@ -14,3 +14,60 @@ Se inicializa la estructura base del sistema web para la gestion de citas medica
 2. Control de Versiones:
    - Repositorio Git inicializado y vinculado a GitHub (Jairo-Demo/bd_vida_salud).
    - Exclusion de archivos sensibles y dependencias temporales mediante .gitignore.
+
+
+=== PASO 2: Creacion de Modelos y Migraciones del Ciclo 1 ===
+
+TITULO COMMIT:
+Creacion de modelos y migraciones de las tablas del Ciclo 1
+
+EXPLICACION:
+Se estructuran los 15 modelos Eloquent con sus fillable, casts y relaciones, junto a sus 15 archivos de migracion relacionales en orden secuencial para garantizar la integridad referencial en MySQL (puerto 3307):
+
+1. Modulo de Acceso, Usuarios y Seguridad (Paquete 1):
+   - personas: Clase base de datos personales (ci unico, nombres, apellidos, telefono, correo, estado).
+   - roles: Catalogo de roles de acceso (Administrador, Recepcionista, Medico, Paciente).
+   - permisos: Catalogo de permisos granulares del sistema.
+   - rol_permiso: Tabla asociativa N:M entre roles y permisos.
+   - users: Cuentas de acceso al sistema vinculadas a personas y roles (username unico, email, password encriptado, ultimo acceso).
+   - bitacoras: Auditoria de operaciones (usuario_id, accion, tabla_afectada, registro_id, detalles, ip, canal web/voz, timestamp).
+
+2. Modulo de Gestion de Pacientes (Paquete 2):
+   - pacientes: Especializacion de persona con clave foranea 1:1 (codigo unico, fecha de nacimiento, sexo, direccion, tipo de sangre, alergias, contacto de emergencia y estado activo/inactivo).
+
+3. Modulo de Gestion Medica y Horarios (Paquete 3):
+   - especialidades: Catalogo de especialidades medicas con nombre unico normalizado y estado.
+   - medicos: Especializacion de persona con registro profesional unico y estado.
+   - medico_especialidad: Tabla asociativa N:M que vincula medicos con una o varias especialidades.
+   - horarios_atencion: Disponibilidad semanal del medico (dia, hora inicio, hora fin, duracion de cita en minutos, estado).
+   - fichas: Bloques de atencion predeterminados calculados a partir del horario (numero, hora inicio, hora fin, estado).
+
+4. Modulo de Programacion de Citas (Paquete 4):
+   - estados_cita: Catalogo de estados del ciclo de vida (Programada, Confirmada, Atendida, Cancelada, Inasistencia).
+   - citas: Entidad transaccional central vinculando paciente, medico, especialidad, ficha, estado y usuario que registra, con fecha, rango horario, motivo, modalidad (Presencial/Virtual) y motivo de cancelacion.
+   - historial_estados_cita: Registro inmutable de transiciones de estado de la cita con responsable, fecha y motivo.
+
+
+=== PASO 3: Ajuste de modelos y migraciones al diagrama de clases final ===
+
+TITULO COMMIT:
+Ajuste de modelos y migraciones al diagrama de clases final (Ciclo 1 y Ciclo 2)
+
+EXPLICACION:
+Se alinean las tablas y modelos Eloquent con el diagrama de clases final (25 clases):
+
+1. Ajustes a migraciones existentes (multiplicidades del diagrama):
+   - users: persona_id obligatorio y unico (Persona 1..1 -- 0..1 Usuario) y rol_id obligatorio (Rol 1..1 -- 0..* Usuario).
+   - bitacoras: usuario_id obligatorio (Usuario 1..1 -- 0..* Bitacora).
+   - medico_especialidad: se agrega estado.
+   - fichas: numero unico por horario.
+   - citas: ficha_id y usuario_registro_id obligatorios; claves foraneas con restrict para no eliminar historial (RN11); indices por medico/fecha y ficha/fecha.
+   - historial_estados_cita: usuario_id obligatorio.
+
+2. Nuevas tablas (Ciclo 2): bloqueos_agenda, recordatorios, consultas, medicamentos, recetas, detalle_recetas, alergias, paciente_alergia, paciente_medicamento y antecedentes.
+   - Receta y Medicamento se relacionan solo a traves de detalle_recetas (sin relacion directa).
+
+3. Nuevos modelos: BloqueoAgenda, Recordatorio, Consulta, Receta, DetalleReceta, Medicamento, Alergia, PacienteAlergia, PacienteMedicamento y Antecedente; relaciones agregadas en los modelos existentes.
+
+4. Ejecutar: php artisan migrate:fresh
+
