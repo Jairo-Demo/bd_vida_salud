@@ -1,0 +1,16 @@
+=== PASO 1: Configuracion Inicial del Proyecto y Entorno ===
+
+TITULO COMMIT:
+Configuracion inicial del proyecto Laravel y entorno
+
+EXPLICACION:
+Se inicializa la estructura base del sistema web para la gestion de citas medicas de la Clinica Vida Salud (Ciclo 1):
+
+1. Framework y Entorno:
+   - Laravel 12 sobre PHP 8.2+.
+   - Configuracion de variables de entorno (.env) para conexion a base de datos MySQL local en puerto 3307.
+   - Base de datos asignada: bd_vida_salud.
+
+2. Control de Versiones:
+   - Repositorio Git inicializado y vinculado a GitHub (Jairo-Demo/bd_vida_salud).
+   - Exclusion de archivos sensibles y dependencias temporales mediante .gitignore.
