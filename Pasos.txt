@@ -71,3 +71,44 @@ Se alinean las tablas y modelos Eloquent con el diagrama de clases final (25 cla
 
 4. Ejecutar: php artisan migrate:fresh
 
+
+
+=== PASO 4: Creacion de Seeders con Datos Maestros y Usuarios de Prueba ===
+
+TITULO COMMIT:
+Creacion de seeders con roles, permisos, estados, especialidades y usuarios demo
+
+EXPLICACION:
+Se implementan los Seeders para poblar la base de datos con los catalogos normados y cuentas de prueba para todos los roles del sistema:
+
+1. database/seeders/RolSeeder.php:
+   - Administrador (ID 1): Control total y auditoria.
+   - Recepcionista (ID 2): Atencion presencial y agenda.
+   - Medico (ID 3): Visualizacion de agenda y consultas.
+   - Paciente (ID 4): Autoservicio de citas online.
+
+2. database/seeders/PermisoSeeder.php:
+   - Permisos granulares agrupados por modulo (Seguridad, Pacientes, Medicos, Horarios, Citas).
+   - Asignacion a cada rol mediante sincronizacion en rol_permiso.
+
+3. database/seeders/EstadoCitaSeeder.php:
+   - Catalogo normado: Programada, Confirmada, Atendida, Cancelada, Inasistencia.
+
+4. database/seeders/EspecialidadSeeder.php:
+   - Medicina General, Pediatria, Ginecologia y Obstetricia, Odontologia, Cardiologia, Traumatologia.
+
+5. database/seeders/DatosInicialesSeeder.php:
+   - Administrador: Jhon Jairo Patzi Balvin (CI: 11325356, Cel: 67891791, email: 47896jhonpro@gmail.com, user: admin / pass: admin123).
+   - Recepcionista: Maria Lopez (user: recepcion / pass: recep123).
+   - Medicos Demo con horarios semanales y generacion automatica de fichas (turnos de 30 min):
+     * Dr. Alejandro Roca (user: dr.roca / pass: medico123) en Medicina General y Pediatria (Lunes, Miercoles, Viernes 08:00 a 12:00, 8 fichas por turno).
+     * Dra. Patricia Vargas (user: dra.vargas / pass: medico123) en Ginecologia (Martes, Jueves 14:00 a 18:00, 8 fichas por turno).
+   - Pacientes Demo con expediente clinico y usuario de portal:
+     * Juan Mamani (user: paciente1 / pass: paciente123).
+     * Lucia Fernandez (user: paciente2 / pass: paciente123).
+
+6. database/seeders/DatabaseSeeder.php:
+   - Orquestador que ejecuta todos los seeders en orden secuencial de claves foraneas.
+
+7. Comando para poblar la base de datos:
+   php artisan db:seed
