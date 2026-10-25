@@ -1,223 +1,252 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Principal - Clínica Vida Salud</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-        }
-        body {
-            background-color: #f8fafc;
-            color: #1e293b;
-            min-height: 100vh;
-        }
-        .navbar {
-            background: #ffffff;
-            border-bottom: 1px solid #e2e8f0;
-            padding: 16px 28px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        .brand {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-size: 18px;
-            font-weight: 700;
-            color: #0f172a;
-        }
-        .brand-badge {
-            background: linear-gradient(135deg, #0284c7 0%, #0d9488 100%);
-            color: #ffffff;
-            width: 36px;
-            height: 36px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-        }
-        .user-nav {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-        .user-info {
-            text-align: right;
-        }
-        .user-name {
-            font-size: 14px;
-            font-weight: 600;
-            color: #0f172a;
-        }
-        .user-role {
-            font-size: 12px;
-            color: #0284c7;
-            font-weight: 600;
-        }
-        .btn-logout {
-            background-color: #fee2e2;
-            color: #b91c1c;
-            border: 1px solid #fca5a5;
-            padding: 8px 14px;
-            border-radius: 8px;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .btn-logout:hover {
-            background-color: #fecaca;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 32px auto;
-            padding: 0 20px;
-        }
-        .welcome-card {
-            background: linear-gradient(135deg, #0284c7 0%, #0d9488 100%);
-            color: #ffffff;
-            padding: 32px;
-            border-radius: 18px;
-            margin-bottom: 28px;
-            box-shadow: 0 10px 25px -5px rgba(2, 132, 199, 0.25);
-        }
-        .welcome-card h2 {
-            font-size: 24px;
-            font-weight: 700;
-            margin-bottom: 8px;
-        }
-        .welcome-card p {
-            font-size: 14px;
-            color: rgba(255, 255, 255, 0.9);
-        }
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 20px;
-            margin-bottom: 32px;
-        }
-        .stat-card {
-            background: #ffffff;
-            padding: 24px;
-            border-radius: 16px;
-            border: 1px solid #e2e8f0;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-        }
-        .stat-label {
-            font-size: 13px;
-            font-weight: 600;
-            color: #64748b;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .stat-value {
-            font-size: 32px;
-            font-weight: 700;
-            color: #0f172a;
-            margin-top: 8px;
-        }
-        .info-card {
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            border-radius: 16px;
-            padding: 24px;
-        }
-        .info-card h3 {
-            font-size: 16px;
-            font-weight: 700;
-            color: #0f172a;
-            margin-bottom: 12px;
-        }
-        .info-card ul {
-            list-style: none;
-            display: grid;
-            gap: 10px;
-            font-size: 14px;
-            color: #475569;
-        }
-        .info-card li {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .dot {
-            width: 8px;
-            height: 8px;
-            background-color: #10b981;
-            border-radius: 50%;
-        }
-    </style>
-</head>
-<body>
+@extends('layouts.app')
 
-<!-- Barra de Navegación Superior -->
-<nav class="navbar">
-    <div class="brand">
-        <div class="brand-badge">+</div>
-        <span>Clínica Vida Salud</span>
-    </div>
-    <div class="user-nav">
-        <div class="user-info">
-            <div class="user-name">{{ $user->name }}</div>
-            <div class="user-role">{{ $rol }}</div>
-        </div>
-        <form action="{{ route('logout') }}" method="POST">
-            @csrf
-            <button type="submit" class="btn-logout">Cerrar Sesión</button>
-        </form>
-    </div>
-</nav>
+@section('title', 'Panel Principal')
 
-<!-- Contenedor Principal -->
-<div class="container">
-    <!-- Tarjeta de Bienvenida -->
-    <div class="welcome-card">
-        <h2>¡Bienvenido, {{ $user->name }}!</h2>
-        <p>Sistema de Gestión de Citas Médicas — Panel de Control (Perfil: {{ $rol }})</p>
-    </div>
+@push('styles')
+<style>
+    /* Tarjeta de bienvenida superior */
+    .welcome-banner {
+        background: linear-gradient(135deg, #0284c7 0%, #0d9488 100%);
+        border-radius: 16px;
+        padding: 28px 32px;
+        color: #ffffff;
+        margin-bottom: 28px;
+        box-shadow: 0 10px 25px -5px rgba(2, 132, 199, 0.25);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .welcome-title {
+        font-size: 22px;
+        font-weight: 700;
+        margin-bottom: 6px;
+    }
+    .welcome-desc {
+        font-size: 13.5px;
+        color: rgba(255, 255, 255, 0.9);
+    }
+    .role-badge-large {
+        background: rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(8px);
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 600;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+    }
 
-    <!-- Grilla de Estadísticas Rápidas -->
-    <div class="stats-grid">
-        <div class="stat-card">
-            <div class="stat-label">Pacientes Registrados</div>
-            <div class="stat-value">{{ $totalPacientes }}</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-label">Médicos Activos</div>
-            <div class="stat-value">{{ $totalMedicos }}</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-label">Citas Médicas Hoy</div>
-            <div class="stat-value">{{ $citasHoy }}</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-label">Último Acceso</div>
-            <div class="stat-value" style="font-size: 16px; margin-top: 18px; color: #64748b;">
-                {{ $user->ultimo_acceso ? $user->ultimo_acceso->format('d/m/Y H:i') : 'Primer acceso' }}
-            </div>
-        </div>
-    </div>
+    /* Grilla de metricas rapidas */
+    .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 18px;
+        margin-bottom: 32px;
+    }
+    .metric-card {
+        background: #ffffff;
+        padding: 20px;
+        border-radius: 14px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+    .metric-label {
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #64748b;
+    }
+    .metric-val {
+        font-size: 28px;
+        font-weight: 700;
+        color: #0f172a;
+        margin-top: 6px;
+    }
+    .metric-sub {
+        font-size: 12px;
+        color: #0284c7;
+        margin-top: 4px;
+        font-weight: 500;
+    }
 
-    <!-- Tarjeta Informativa de Auditoría -->
-    <div class="info-card">
-        <h3>Auditoría y Seguridad Activa</h3>
-        <ul>
-            <li><span class="dot"></span> Sesión autenticada con protección CSRF e invalidación de token.</li>
-            <li><span class="dot"></span> Registro automático en la tabla <code>bitacoras</code> (IP, canal WEB, timestamp).</li>
-            <li><span class="dot"></span> Middleware de control de acceso por roles habilitado.</li>
-        </ul>
+    /* Seccion de Paquetes PUDS */
+    .packages-section-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: #0f172a;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .packages-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+        gap: 20px;
+        margin-bottom: 32px;
+    }
+    .package-card {
+        background: #ffffff;
+        border-radius: 14px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+    }
+    .package-card:hover {
+        transform: translateY(-2px);
+        border-color: #bae6fd;
+        box-shadow: 0 8px 20px -4px rgba(2, 132, 199, 0.12);
+    }
+    .package-card-header {
+        padding: 20px 22px 16px;
+        border-bottom: 1px solid #f1f5f9;
+    }
+    .package-card-code {
+        display: inline-block;
+        background-color: #e0f2fe;
+        color: #0284c7;
+        font-size: 11px;
+        font-weight: 700;
+        padding: 3px 8px;
+        border-radius: 6px;
+        margin-bottom: 8px;
+    }
+    .package-card-name {
+        font-size: 16px;
+        font-weight: 700;
+        color: #0f172a;
+        margin-bottom: 4px;
+    }
+    .package-card-desc {
+        font-size: 12.5px;
+        color: #64748b;
+        line-height: 1.45;
+    }
+    .package-card-body {
+        padding: 10px;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+    .option-link {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 14px;
+        border-radius: 8px;
+        text-decoration: none;
+        color: #334155;
+        font-size: 13.5px;
+        font-weight: 600;
+        transition: all 0.15s;
+    }
+    .option-link:hover {
+        background-color: #f0fdf4;
+        color: #166534;
+    }
+    .option-link.disabled {
+        color: #94a3b8;
+        cursor: not-allowed;
+        background: transparent;
+    }
+    .option-link.disabled:hover {
+        background: transparent;
+        color: #94a3b8;
+    }
+    .tag-cycle {
+        font-size: 10.5px;
+        background-color: #f1f5f9;
+        color: #64748b;
+        padding: 3px 7px;
+        border-radius: 5px;
+        font-weight: 600;
+    }
+</style>
+@endpush
+
+@section('content')
+
+@php
+    $paquetesGrid = \App\Services\MenuService::paquetes($user);
+@endphp
+
+<!-- Banner de Bienvenida -->
+<div class="welcome-banner">
+    <div>
+        <h1 class="welcome-title">¡Bienvenido, {{ $user->name }}!</h1>
+        <p class="welcome-desc">Arquitectura por Paquetes PUDS — Clínica "Vida Salud" (Ciclo 1)</p>
+    </div>
+    <div class="role-badge-large">
+        Perfil: {{ $rol }}
     </div>
 </div>
 
-</body>
-</html>
+<!-- Metricas del Sistema -->
+<div class="metrics-grid">
+    <div class="metric-card">
+        <div class="metric-label">Pacientes Registrados</div>
+        <div class="metric-val">{{ $totalPacientes }}</div>
+        <div class="metric-sub">P2: Gestión de Pacientes</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-label">Médicos Activos</div>
+        <div class="metric-val">{{ $totalMedicos }}</div>
+        <div class="metric-sub">P3: Gestión Médica y Fichas</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-label">Citas Médicas Hoy</div>
+        <div class="metric-val">{{ $citasHoy }}</div>
+        <div class="metric-sub">P4: Programación de Citas</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-label">Último Acceso</div>
+        <div class="metric-val" style="font-size: 16px; margin-top: 14px; color: #475569;">
+            {{ $user->ultimo_acceso ? $user->ultimo_acceso->format('d/m/Y H:i') : 'Primer acceso' }}
+        </div>
+        <div class="metric-sub">P1: Seguridad y Bitácora</div>
+    </div>
+</div>
+
+<!-- Cuadricula de Paquetes PUDS -->
+<div class="packages-section-title">
+    <span>📦 Paquetes del Sistema (Metodología PUDS - Ciclo 1)</span>
+</div>
+
+<div class="packages-grid">
+    @foreach($paquetesGrid as $pkg)
+        <div class="package-card">
+            <div class="package-card-header">
+                <span class="package-card-code">{{ $pkg['codigo'] }}</span>
+                <h2 class="package-card-name">{{ $pkg['nombre'] }}</h2>
+                <p class="package-card-desc">{{ $pkg['descripcion'] }}</p>
+            </div>
+            <div class="package-card-body">
+                @foreach($pkg['opciones'] as $opcion)
+                    @if(!empty($opcion['ruta']) && Route::has($opcion['ruta']))
+                        <a href="{{ route($opcion['ruta']) }}" class="option-link">
+                            <span>{{ $opcion['nombre'] }}</span>
+                            <span style="color: #0284c7;">&rarr;</span>
+                        </a>
+                    @else
+                        {{-- Opcion del Ciclo 2 o modulo en construccion: badge 'Proximo ciclo' --}}
+                        <div class="option-link disabled" title="{{ $opcion['descripcion'] }}">
+                            <span>{{ $opcion['nombre'] }}</span>
+                            <span class="tag-cycle">
+                                {{ ($opcion['ciclo'] ?? 2) == 2 ? 'Próximo ciclo' : 'En desarrollo' }}
+                            </span>
+                        </div>
+                    @endif
+                @endforeach
+            </div>
+        </div>
+    @endforeach
+</div>
+
+@endsection

@@ -145,3 +145,23 @@ Se implementa el flujo completo de autenticacion y seguridad del Paquete 1 con c
 
 7. routes/web.php:
    - Definicion de rutas protegidas (auth) y publicas (guest).
+
+
+=== PASO 6: Layout Maestro y Dashboard Estructurado por Paquetes PUDS ===
+
+TITULO COMMIT:
+Implementacion del layout maestro y dashboard modular por paquetes PUDS
+
+EXPLICACION:
+Se alinea la interfaz de usuario con la metodologia PUDS y la rubrica de evaluacion de la Ing. Angelica Garzon:
+
+1. app/Services/MenuService.php:
+   - Centraliza la definicion de los 6 paquetes del sistema: P1 (Seguridad), P2 (Pacientes), P3 (Medicos y Horarios), P4 (Citas Medicas), P5 (Reportes y Estadisticas) y P6 (Consultas y Recetas).
+   - Filtra dinamicamente las opciones de navegacion segun el rol del usuario autenticado (Administrador, Recepcionista, Medico, Paciente).
+
+2. resources/views/layouts/app.blade.php:
+   - Layout maestro responsivo con cabecera fija, desplegables por paquete (P1 a P5), datos del usuario activo, boton de cierre de sesion y pie institucional.
+
+3. resources/views/dashboard.blade.php:
+   - Panel principal estructurado en cuadricula de tarjetas por paquete PUDS.
+   - Enlaces funcionales para los modulos del Ciclo 1 e insignias visibles de "Proximo ciclo" para los modulos del Ciclo 2, demostrando el alcance oficial de la entrega.
