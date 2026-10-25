@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  # 1. Aplicación Laravel (PHP-FPM)
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vidasalud_app
+    restart: unless-stopped
+    working_dir: /var/www
+    volumes:
+      - ./:/var/www
+    networks:
+      - vidasalud_network
+    depends_on:
+      - postgres
+
+  # 2. Servidor Web Nginx (Puerto 8000 expuesto al público)
+  nginx:
+    image: nginx:alpine
+    container_name: vidasalud_nginx
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+    volumes:
+      - ./:/var/www
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d
+    networks:
+      - vidasalud_network
+    depends_on:
+      - app
+
+  # 3. Base de Datos PostgreSQL (RN14 / RNF01 del Examen)
+  postgres:
+    image: postgres:16-alpine
+    container_name: vidasalud_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: bd_vida_salud
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - vidasalud_network
+
+networks:
+  vidasalud_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
