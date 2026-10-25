@@ -191,3 +191,32 @@ Se implementa el modulo troncal P2 (Gestion de Pacientes - RF02 / CU06 - CU09) c
 
 3. routes/web.php:
    - Rutas resource y ruta toggleEstado protegidas por middleware de autenticacion y roles autorizados (Administrador, Recepcionista, Medico).
+
+
+=== PASO 8: Modulo de Especialidades, Medicos y Horarios con Generacion de Fichas ===
+
+TITULO COMMIT:
+Implementacion de especialidades, medicos y horarios con generacion automatica de fichas
+
+EXPLICACION:
+Se implementa el modulo troncal P3 (Gestion Medica y Horarios - RF03, RF04, RF05 / CU10 - CU13) en estricto orden CRUD:
+
+1. app/Http/Controllers/EspecialidadController.php:
+   - CRUD completo de especialidades con normalizacion de nombres unica (RF04 / CU10) y auditoria en bitacora.
+   - Desactivacion logica si registra citas asociadas para mantener la integridad referencial.
+
+2. app/Http/Controllers/MedicoController.php:
+   - CRUD completo de medicos vinculando Persona, codigo unico MED-XXX, registro profesional y asignacion N:M de especialidades (RF03 / CU11 - CU12).
+   - Desactivacion logica segun RN11 cuando el medico tiene citas historicas asociadas.
+   - Perfil integral con visualizacion de jornadas semanales y citas asignadas.
+
+3. app/Http/Controllers/HorarioAtencionController.php:
+   - CRUD de jornadas de atencion semanales (RF05 / CU13) con validacion anti-solapamiento de horarios del mismo medico.
+   - Generacion automatica de Fichas (bloques predeterminados de atencion de 30 minutos numerados correlativamente) a partir del horario.
+   - Desactivacion logica (RN11) si las fichas ya fueron utilizadas en citas medicas.
+
+4. resources/views/ (especialidades, medicos, horarios):
+   - Vistas Blade organizadas en tablas responsivas con buscadores, formularios divididos por secciones, badges de estado y cuadricula visual de fichas numeradas.
+
+5. routes/web.php:
+   - 24 rutas de tipo resource y toggleEstado protegidas por autenticacion y control de acceso por roles.
