@@ -165,3 +165,29 @@ Se alinea la interfaz de usuario con la metodologia PUDS y la rubrica de evaluac
 3. resources/views/dashboard.blade.php:
    - Panel principal estructurado en cuadricula de tarjetas por paquete PUDS.
    - Enlaces funcionales para los modulos del Ciclo 1 e insignias visibles de "Proximo ciclo" para los modulos del Ciclo 2, demostrando el alcance oficial de la entrega.
+
+
+=== PASO 7: Modulo de Gestion de Pacientes y Expediente Clinico ===
+
+TITULO COMMIT:
+Implementacion del modulo de pacientes con busqueda, registro, expediente e historial de citas
+
+EXPLICACION:
+Se implementa el modulo troncal P2 (Gestion de Pacientes - RF02 / CU06 - CU09) cumpliendo las reglas de negocio de la ingeniera:
+
+1. app/Http/Controllers/PacienteController.php:
+   - index(): Listado con paginacion, buscador en tiempo real por CI, nombres o apellidos, y filtro por estado activo/inactivo.
+   - create(): Formulario con generacion de codigo correlativo (PAC-XXX).
+   - store(): Transaccion atomica DB::transaction para persistir Persona y Paciente, validacion de CI unico (RN01) y auditoria automatica en bitacoras (CREAR_PACIENTE).
+   - show(): Visualizacion del expediente demografico y clinico integral con historial completo de citas pasadas y futuras (RF04 / RF12 / CU08).
+   - edit() y update(): Modificacion de datos personales, clinicos y de emergencia con validacion de CI único exceptuando al paciente actual y auditoria en bitacoras.
+   - toggleEstado(): Desactivacion y activacion logica sin eliminar el historial de citas (RN11).
+
+2. resources/views/pacientes/:
+   - index.blade.php: Tabla interactiva con badges de estado y botones de accion (Expediente, Editar, Desactivar/Activar).
+   - create.blade.php: Formulario por secciones: Datos Personales, Informacion Medica y Contacto de Emergencia.
+   - edit.blade.php: Formulario de edicion de expediente.
+   - show.blade.php: Expediente clinico completo con tarjetas de datos y tabla cronologica de citas medicas.
+
+3. routes/web.php:
+   - Rutas resource y ruta toggleEstado protegidas por middleware de autenticacion y roles autorizados (Administrador, Recepcionista, Medico).
