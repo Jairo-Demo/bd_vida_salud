@@ -126,43 +126,4 @@
     </div>
 </div>
 
-<!-- 3. Citas Medicas Asignadas -->
-<div class="section-card">
-    <h2 class="section-title" style="margin-bottom: 4px;">Últimas Citas Médicas Asignadas</h2>
-    <p style="font-size: 13px; color: #64748b; margin-bottom: 16px;">Trazabilidad clínica de las consultas programadas y atendidas por este facultativo.</p>
-
-    <div style="overflow-x: auto;">
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Código Cita</th>
-                    <th>Fecha</th>
-                    <th>Horario / Ficha</th>
-                    <th>Paciente</th>
-                    <th>Especialidad</th>
-                    <th>Estado</th>
-                </tr>
-            </thead>
-            <tbody>
-                @forelse($medico->citas as $cita)
-                    <tr>
-                        <td><strong>{{ $cita->codigo }}</strong></td>
-                        <td>{{ \Carbon\Carbon::parse($cita->fecha)->format('d/m/Y') }}</td>
-                        <td>{{ substr($cita->hora_inicio, 0, 5) }} - {{ substr($cita->hora_fin, 0, 5) }} (Ficha #{{ $cita->ficha->numero ?? '—' }})</td>
-                        <td><strong>{{ $cita->paciente->persona->nombre_completo ?? '—' }}</strong></td>
-                        <td>{{ $cita->especialidad->nombre ?? '—' }}</td>
-                        <td>{{ $cita->estadoCita->nombre ?? '—' }}</td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="6" style="text-align: center; padding: 20px; color: #64748b;">
-                            No registra citas médicas en el historial.
-                        </td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
-    </div>
-</div>
-
 @endsection

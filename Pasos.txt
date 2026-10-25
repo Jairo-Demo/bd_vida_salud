@@ -252,3 +252,32 @@ Se implementa el modulo troncal P4 (Gestion de Citas Medicas - RF06, RF07, RF08,
 
 3. routes/web.php:
    - 9 rutas RESTful para citas (incluyendo endpoint JSON de fichas y transiciones de estado), protegidas por middleware de autenticacion y roles.
+
+
+=== PASO 10: Alineacion Estricta a la Matriz de Casos de Uso del Ciclo 1 y Modulos de Usuarios y Bitacora ===
+
+TITULO COMMIT:
+Alineacion estricta al alcance de Casos de Uso del Ciclo 1 con gestion de usuarios y bitacora
+
+EXPLICACION:
+Se alinea el sistema al pie de la letra con la Seccion 4.2.1 ("Priorizar Casos de Uso - Ciclo 1") del documento oficial de entrega (12 Casos de Uso):
+
+1. Modulo de Gestion de Usuarios y Asignacion de Roles (CU03 / CU04):
+   - app/Http/Controllers/UsuarioController.php:
+     * create() y store(): Formulario y transaccion atomica para dar de alta Persona y Usuario asignando rol formal (Administrador, Recepcionista, Medico).
+     * index() y show(): Catalogo de usuarios con filtro por rol y estado, mas buscador por CI, nombre, username y correo.
+     * edit() y update(): Modificacion de credenciales, cambio de rol asignado y restablecimiento opcional de contrasena.
+     * toggleEstado() y destroy(): Desactivacion logica de cuentas de acceso para proteger la trazabilidad (RN11).
+   - resources/views/usuarios/:
+     * index.blade.php, create.blade.php y edit.blade.php con diseno profesional y badges por tipo de rol.
+
+2. Modulo de Bitacora del Sistema (RN15 / CU05 - Solicitado explicitamente):
+   - app/Http/Controllers/BitacoraController.php:
+     * index(): Consulta cronologica inmutable de auditoria con filtros combinados por usuario, accion, rango de fechas (desde/hasta) y busqueda por IP o detalles.
+   - resources/views/bitacora/index.blade.php:
+     * Tabla con codigos de accion resaltados, IPs y canal WEB.
+
+3. Depuracion de Elementos Pertenecientes al Ciclo 2:
+   - Citas (CU14 / CU15): Se mantiene exclusivamente la consulta de fichas disponibles (CU14), el formulario de programacion con validacion anti-solapamiento (CU15), el comprobante de cita (show) y la lista de control de reservas. Se retiran las acciones de reprogramacion (CU16), cancelacion (CU17) y transiciones de consulta (CU18/CU19) que corresponden formalmente al Ciclo 2.
+   - Pacientes y Medicos: Se remueven las tablas de historial historico de citas en el perfil para dejarlas exclusivas del Ciclo 2 (CU08).
+   - routes/web.php: Rutas depuradas y protegidas exactamente segun los 12 CUs aprobados para la entrega del Ciclo 1.

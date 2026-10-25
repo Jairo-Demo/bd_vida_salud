@@ -73,45 +73,10 @@
         </div>
     </div>
 
-    <!-- Barra de Acciones según el estado -->
+    <!-- Barra de Acciones de Ciclo 1 (CU15: Comprobante) -->
     <div class="btn-group">
-        <a href="{{ route('citas.index') }}" class="btn-h btn-back">&larr; Volver a la Agenda</a>
-
-        @if(!in_array($cita->estadoCita->nombre, ['Atendida', 'Cancelada']))
-            {{-- Boton de Confirmar Asistencia --}}
-            @if($cita->estadoCita->nombre === 'Programada')
-                @php $estConfirmada = $estadosDisponibles->where('nombre', 'Confirmada')->first(); @endphp
-                @if($estConfirmada)
-                    <form action="{{ route('citas.cambiarEstado', $cita) }}" method="POST" style="display:inline;">
-                        @csrf
-                        @method('PATCH')
-                        <input type="hidden" name="nuevo_estado_id" value="{{ $estConfirmada->id }}">
-                        <input type="hidden" name="motivo" value="Asistencia confirmada por el paciente / recepción.">
-                        <button type="submit" class="btn-h btn-confirm">✓ Confirmar Cita</button>
-                    </form>
-                @endif
-            @endif
-
-            {{-- Boton de Atender (Consulta Realizada) --}}
-            @if(in_array($cita->estadoCita->nombre, ['Programada', 'Confirmada']) && in_array(Auth::user()->rol->nombre ?? '', ['Administrador', 'Medico']))
-                @php $estAtendida = $estadosDisponibles->where('nombre', 'Atendida')->first(); @endphp
-                @if($estAtendida)
-                    <form action="{{ route('citas.cambiarEstado', $cita) }}" method="POST" style="display:inline;" onsubmit="return confirm('¿Marcar consulta como Atendida?');">
-                        @csrf
-                        @method('PATCH')
-                        <input type="hidden" name="nuevo_estado_id" value="{{ $estAtendida->id }}">
-                        <input type="hidden" name="motivo" value="Consulta médica concluida con éxito por el médico.">
-                        <button type="submit" class="btn-h btn-attend">🩺 Marcar Atendida</button>
-                    </form>
-                @endif
-            @endif
-
-            {{-- Boton de Reprogramar (RF08) --}}
-            <a href="{{ route('citas.edit', $cita) }}" class="btn-h btn-reschedule">🔄 Reprogramar</a>
-
-            {{-- Boton de Cancelar con Modal / Formulario (RF09) --}}
-            <button type="button" class="btn-h btn-cancel-appt" onclick="mostrarModalCancelar()">✕ Cancelar Cita</button>
-        @endif
+        <a href="{{ route('citas.index') }}" class="btn-h btn-back">&larr; Volver a la Lista</a>
+        <button type="button" onclick="window.print()" class="btn-h" style="background: #0284c7; color: #fff;">🖨️ Imprimir Comprobante</button>
     </div>
 </div>
 
@@ -213,41 +178,5 @@
         @endforelse
     </div>
 </div>
-
-<!-- Modal para Cancelacion con Motivo Obligatorio (RF09) -->
-<div id="modalCancelar" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 500; align-items: center; justify-content: center; padding: 20px;">
-    <div style="background: #fff; border-radius: 14px; max-width: 500px; width: 100%; padding: 26px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3);">
-        <h3 style="font-size: 18px; font-weight: 700; color: #991b1b; margin-bottom: 6px;">Cancelar Cita Médica (RF09)</h3>
-        <p style="font-size: 13px; color: #64748b; margin-bottom: 16px;">La cita se marcará como Cancelada sin borrarse físicamente. Se liberará el turno para otros pacientes.</p>
-
-        <form action="{{ route('citas.destroy', $cita) }}" method="POST">
-            @csrf
-            @method('DELETE')
-
-            <div style="margin-bottom: 18px;">
-                <label style="display: block; font-size: 12.5px; font-weight: 600; color: #334155; margin-bottom: 6px;">
-                    Motivo de Cancelación <span style="color: #ef4444;">*</span>
-                </label>
-                <textarea name="motivo_cancelacion" rows="3" required placeholder="Escriba el motivo detallado de la cancelación..." style="width: 100%; padding: 10px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 13px; outline: none;"></textarea>
-            </div>
-
-            <div style="display: flex; justify-content: flex-end; gap: 10px;">
-                <button type="button" onclick="cerrarModalCancelar()" style="background: #f1f5f9; color: #475569; padding: 8px 16px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer;">Cerrar</button>
-                <button type="submit" style="background: #dc2626; color: #fff; padding: 8px 18px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer;">Confirmar Cancelación</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-@push('scripts')
-<script>
-    function mostrarModalCancelar() {
-        document.getElementById('modalCancelar').style.display = 'flex';
-    }
-    function cerrarModalCancelar() {
-        document.getElementById('modalCancelar').style.display = 'none';
-    }
-</script>
-@endpush
 
 @endsection
