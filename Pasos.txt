@@ -112,3 +112,36 @@ Se implementan los Seeders para poblar la base de datos con los catalogos normad
 
 7. Comando para poblar la base de datos:
    php artisan db:seed
+
+
+=== PASO 5: Modulo de Autenticacion, Control de Acceso y Bitacora ===
+
+TITULO COMMIT:
+Implementacion de autenticacion login/logout, control de roles y bitacora automatica
+
+EXPLICACION:
+Se implementa el flujo completo de autenticacion y seguridad del Paquete 1 con comentarios didacticos en cada componente:
+
+1. app/Services/BitacoraService.php:
+   - Servicio estatico para registrar eventos inmutables en la tabla bitacoras (accion, usuario, tabla, ip, canal WEB y timestamp).
+
+2. app/Http/Middleware/CheckRole.php:
+   - Middleware de autorizacion que verifica el inicio de sesion, el estado activo de la cuenta y el rol del usuario autenticado.
+   - Registrado con el alias 'rol' en bootstrap/app.php.
+
+3. app/Http/Controllers/AuthController.php:
+   - showLoginForm(): Muestra la pantalla de inicio de sesion.
+   - login(): Permite autenticarse mediante username o email con Hash::check, actualiza ultimo_acceso y registra automaticamente la accion LOGIN en la bitacora.
+   - logout(): Invalida la sesion, regenera el token CSRF y registra la accion LOGOUT en la bitacora.
+
+4. app/Http/Controllers/DashboardController.php:
+   - index(): Panel principal que muestra metricas segun el perfil del usuario (pacientes, medicos, citas del dia).
+
+5. resources/views/auth/login.blade.php:
+   - Vista de login responsiva con diseno clinico moderno, alertas de error/exito y atajos para probar credenciales demo.
+
+6. resources/views/dashboard.blade.php:
+   - Vista base del panel principal con barra de navegacion, datos del usuario activo, boton de cierre de sesion y tarjetas de estadisticas.
+
+7. routes/web.php:
+   - Definicion de rutas protegidas (auth) y publicas (guest).
