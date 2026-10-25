@@ -55,6 +55,11 @@ class Cita extends Model
         return $this->belongsTo(EstadoCita::class, 'estado_id');
     }
 
+    public function estadoCita()
+    {
+        return $this->belongsTo(EstadoCita::class, 'estado_id');
+    }
+
     public function usuarioRegistro()
     {
         return $this->belongsTo(User::class, 'usuario_registro_id');

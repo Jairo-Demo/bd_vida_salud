@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CitaController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EspecialidadController;
 use App\Http\Controllers\HorarioAtencionController;
@@ -43,5 +44,17 @@ Route::middleware('auth')->group(function () {
         // Horarios de Atencion y Fichas (CU13)
         Route::resource('horarios', HorarioAtencionController::class);
         Route::patch('horarios/{horario}/toggle-estado', [HorarioAtencionController::class, 'toggleEstado'])->name('horarios.toggleEstado');
+    });
+
+    // Modulo P4: Programacion de Citas Medicas (RF06 - RF12 / CU14 - CU17)
+    Route::middleware('rol:Administrador,Recepcionista,Medico,Paciente')->group(function () {
+        // API Consulta de Fichas Disponibles en vivo (CU14)
+        Route::get('citas/consultar-fichas', [CitaController::class, 'consultarFichas'])->name('citas.consultarFichas');
+
+        // Transicion de Estado (Confirmada, Atendida, Inasistencia - RF10)
+        Route::patch('citas/{cita}/cambiar-estado', [CitaController::class, 'cambiarEstado'])->name('citas.cambiarEstado');
+
+        // CRUD Central de Citas
+        Route::resource('citas', CitaController::class);
     });
 });

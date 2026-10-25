@@ -220,3 +220,35 @@ Se implementa el modulo troncal P3 (Gestion Medica y Horarios - RF03, RF04, RF05
 
 5. routes/web.php:
    - 24 rutas de tipo resource y toggleEstado protegidas por autenticacion y control de acceso por roles.
+
+
+=== PASO 9: Modulo del Nucleo de Citas Medicas y Agenda ===
+
+TITULO COMMIT:
+Implementacion del nucleo de citas medicas con agenda, fichas y control de estados
+
+EXPLICACION:
+Se implementa el modulo troncal P4 (Gestion de Citas Medicas - RF06, RF07, RF08, RF09 / CU14 - CU15) en estricto orden CRUD con soporte integral para las reglas de negocio de la Ing. Angelica Garzon:
+
+1. app/Http/Controllers/CitaController.php:
+   - CREATE:
+     * create(): Formulario interactivo con seleccion de paciente, especialidad, medico y fecha.
+     * store(): Reserva atomica (DB::transaction) validando duplicidad simultanea del paciente y medico (RN07/RN13). Registra la cita con estado inicial "Pendiente" y crea enlazado el primer registro en "historial_estados_cita" con hora, usuario responsable y observacion de auditoria.
+     * consultarFichas(): Endpoint JSON que devuelve en tiempo real las fichas de 30 min del medico y fecha seleccionada, marcando cuales ya estan ocupadas y cuales disponibles.
+   - READ:
+     * index(): Agenda diaria y mensual con filtros por rango de fechas, especialidad, medico y estado (Pendiente, Confirmada, Atendida, Cancelada, Inasistencia).
+     * show(): Vista integral de la cita (expediente de la cita) mostrando ficha, paciente, medico, estado actual y linea de tiempo (timeline) inmutable con el historial cronologico de transiciones de estado.
+   - UPDATE:
+     * edit() y update(): Reprogramacion de citas (RF08) con verificacion de que no este cancelada o atendida, liberando la ficha previa y reservando el nuevo horario sin colisiones.
+     * cambiarEstado(): Maquina de estados con transicion formal (Confirmada -> Atendida / Inasistencia) registrando motivo y auditor en historial_estados_cita.
+   - DELETE:
+     * destroy(): Cancelacion logica de citas (RF09) que no borra el registro de la base de datos (cumpliendo RN11), exige motivo obligatorio de cancelacion, actualiza el estado a "Cancelada", registra el evento en el historial y libera la ficha (RN09).
+
+2. resources/views/citas/:
+   - index.blade.php: Agenda con filtros avanzados, selector rapido de fechas ("Hoy", "Manana", "Esta Semana"), badges de estado y botones de gestion.
+   - create.blade.php: Interfaz de reserva con consulta asincrona (fetch API) de fichas disponibles en tiempo real, bloqueando horarios ocupados.
+   - edit.blade.php: Formulario de reprogramacion de fecha, medico y ficha horaria.
+   - show.blade.php: Ficha completa con acciones contextuales de cambio de estado (Confirmar, Marcar Atendida, Registrar Inasistencia, Cancelar) y linea de tiempo de auditoria.
+
+3. routes/web.php:
+   - 9 rutas RESTful para citas (incluyendo endpoint JSON de fichas y transiciones de estado), protegidas por middleware de autenticacion y roles.
