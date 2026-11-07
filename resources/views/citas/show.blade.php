@@ -80,6 +80,20 @@
     @endphp
     <div class="btn-group">
         <a href="{{ route('citas.index') }}" class="btn-h btn-back">&larr; Volver a la Lista</a>
+        @if(in_array($rolActual, ['Administrador', 'Recepcionista']))
+            @if(($cita->estadoCita->nombre ?? '') === 'Programada' && $cita->fecha->gte(today()))
+                <form action="{{ route('citas.confirmar', $cita) }}" method="POST" style="display:inline">
+                    @csrf @method('PATCH')
+                    <button type="submit" class="btn-h btn-confirm">✓ Confirmar</button>
+                </form>
+            @endif
+            @if($modificable && \Carbon\Carbon::parse($cita->fecha->toDateString() . ' ' . $cita->hora_inicio)->isPast())
+                <form action="{{ route('citas.inasistencia', $cita) }}" method="POST" style="display:inline" onsubmit="return confirm('¿Registrar la inasistencia del paciente?')">
+                    @csrf @method('PATCH')
+                    <button type="submit" class="btn-h btn-reschedule">⚠ Inasistencia</button>
+                </form>
+            @endif
+        @endif
         @if($modificable && in_array($rolActual, ['Administrador', 'Recepcionista']))
             <a href="{{ route('citas.reprogramar', $cita) }}" class="btn-h btn-reschedule">🔁 Reprogramar</a>
         @endif

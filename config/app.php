@@ -65,7 +65,7 @@ return [
     |
     */
 
-    'timezone' => 'UTC',
+    'timezone' => env('APP_TIMEZONE', 'America/La_Paz'), // Hora de Bolivia: fechas y horas de las citas (CU19)
 
     /*
     |--------------------------------------------------------------------------

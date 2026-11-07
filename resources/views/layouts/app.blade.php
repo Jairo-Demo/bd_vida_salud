@@ -320,7 +320,7 @@
 <!-- Pie de Pagina Academico PUDS -->
 <footer class="footer">
     <div style="max-width: 1280px; margin: 0 auto; padding: 0 20px;">
-        <strong>Clínica "Vida Salud"</strong> — Sistema Web de Gestión de Citas Médicas | Sistemas de Información I (UAGRM) | Ciclo 1
+        <strong>Clínica "Vida Salud"</strong> — Sistema Web de Gestión de Citas Médicas | Sistemas de Información I (UAGRM) | Ciclo 2
     </div>
 </footer>
 

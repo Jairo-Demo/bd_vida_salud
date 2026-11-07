@@ -1,8 +1,10 @@
 <?php
 
+use App\Http\Controllers\AgendaController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BitacoraController;
 use App\Http\Controllers\CitaController;
+use App\Http\Controllers\CitaEstadoController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EspecialidadController;
 use App\Http\Controllers\HorarioAtencionController;
@@ -75,5 +77,16 @@ Route::middleware('auth')->group(function () {
     Route::middleware('rol:Administrador,Recepcionista')->group(function () {
         Route::get('citas/{cita}/reprogramar', [CitaController::class, 'editReprogramar'])->name('citas.reprogramar');
         Route::put('citas/{cita}/reprogramar', [CitaController::class, 'reprogramar'])->name('citas.reprogramar.update');
+    });
+
+    // Modulo P5: Agenda y Asistencia (CU18 - CU20)
+    Route::middleware('rol:Administrador,Recepcionista,Medico')->group(function () {
+        // Agenda del dia por medico y fecha; el medico solo ve la suya (CU20 / RN28)
+        Route::get('agenda', [AgendaController::class, 'index'])->name('agenda.index');
+    });
+    Route::middleware('rol:Administrador,Recepcionista')->group(function () {
+        Route::patch('citas/{cita}/confirmar', [CitaEstadoController::class, 'confirmar'])->name('citas.confirmar');          // CU18
+        Route::patch('citas/{cita}/inasistencia', [CitaEstadoController::class, 'inasistencia'])->name('citas.inasistencia'); // CU19
+        Route::post('agenda/inasistencias', [CitaEstadoController::class, 'inasistenciaMasiva'])->name('agenda.inasistencias'); // CU19 alterno A
     });
 });
