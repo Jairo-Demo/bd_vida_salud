@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             EstadoCitaSeeder::class,
             EspecialidadSeeder::class,
             DatosInicialesSeeder::class,
+            CatalogoClinicoSeeder::class, // Ciclo 2: medicamentos y alergias (CU27)
         ]);
     }
 }
