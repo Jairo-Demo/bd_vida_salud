@@ -58,12 +58,22 @@ Route::middleware('auth')->group(function () {
         Route::patch('horarios/{horario}/toggle-estado', [HorarioAtencionController::class, 'toggleEstado'])->name('horarios.toggleEstado');
     });
 
-    // Modulo P4: Programacion de Citas Medicas - Ciclo 1 (CU14: Disponibilidad / CU15: Programar Cita)
+    // Modulo P4: Programacion de Citas Medicas (CU14 Disponibilidad, CU15 Programar, CU17 Cancelar)
     Route::middleware('rol:Administrador,Recepcionista,Medico,Paciente')->group(function () {
         // API Consulta de Fichas Disponibles en vivo (CU14)
         Route::get('citas/consultar-fichas', [CitaController::class, 'consultarFichas'])->name('citas.consultarFichas');
 
         // Registro y Comprobante de Citas (CU15)
         Route::resource('citas', CitaController::class)->only(['index', 'create', 'store', 'show']);
+
+        // Ciclo 2 - Cancelar cita (CU17): Recepcionista y Paciente (solo sus citas, validado en el controlador)
+        Route::get('citas/{cita}/cancelar', [CitaController::class, 'editCancelar'])->name('citas.cancelar');
+        Route::patch('citas/{cita}/cancelar', [CitaController::class, 'cancelar'])->name('citas.cancelar.update');
+    });
+
+    // Modulo P4 - Ciclo 2: Reprogramar cita (CU16) - Recepcionista y Administrador
+    Route::middleware('rol:Administrador,Recepcionista')->group(function () {
+        Route::get('citas/{cita}/reprogramar', [CitaController::class, 'editReprogramar'])->name('citas.reprogramar');
+        Route::put('citas/{cita}/reprogramar', [CitaController::class, 'reprogramar'])->name('citas.reprogramar.update');
     });
 });

@@ -205,7 +205,7 @@
                     <input type="radio" name="ficha_id" value="${f.id}" ${f.disponible ? '' : 'disabled'} onchange="seleccionarFicha(this)">
                     <div class="ficha-time">${f.hora_inicio} - ${f.hora_fin}</div>
                     <div class="ficha-tag" style="color: ${f.disponible ? '#15803d' : '#b91c1c'};">
-                        ${f.disponible ? '✓ Ficha #' + f.numero : '✕ Ocupada'}
+                        ${f.disponible ? '✓ Ficha #' + f.numero : '✕ ' + (f.motivo || 'Ocupada')}
                     </div>
                 `;
                 grid.appendChild(label);

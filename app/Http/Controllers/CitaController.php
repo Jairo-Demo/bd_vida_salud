@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BloqueoAgenda;
 use App\Models\Cita;
 use App\Models\Especialidad;
 use App\Models\EstadoCita;
@@ -10,8 +11,10 @@ use App\Models\HistorialEstadoCita;
 use App\Models\HorarioAtencion;
 use App\Models\Medico;
 use App\Models\Paciente;
+use App\Models\Recordatorio;
 use App\Services\BitacoraService;
 use Carbon\Carbon;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -70,15 +73,20 @@ class CitaController extends Controller
         // 2. Obtener datos de la Ficha seleccionada
         $ficha = Ficha::findOrFail($fichaId);
 
+        // 2.1 La fecha no debe estar bloqueada en la agenda del médico (CU30 / RN)
+        if ($bloqueo = $this->bloqueoQueAfecta($medicoId, $fecha, $ficha)) {
+            return back()->withInput()->withErrors([
+                'fecha' => "La agenda del médico está bloqueada en esa fecha ({$bloqueo->tipo}: {$bloqueo->motivo}).",
+            ]);
+        }
+
         // 3. Verificación Anti-Solapamiento en Servidor (RN07, RN13):
         // Impedir que dos citas activas (no canceladas) ocupen la misma ficha y fecha para el médico
-        $estadoCancelada = EstadoCita::where('nombre', 'Cancelada')->first();
-        $idCancelada = $estadoCancelada ? $estadoCancelada->id : 4;
-
+        // Las citas Canceladas o en Inasistencia no ocupan la ficha (RN09)
         $solapada = Cita::where('medico_id', $medicoId)
             ->where('fecha', $fecha)
             ->where('ficha_id', $fichaId)
-            ->where('estado_id', '!=', $idCancelada)
+            ->whereNotIn('estado_id', $this->estadosQueLiberanFicha())
             ->exists();
 
         if ($solapada) {
@@ -163,6 +171,9 @@ class CitaController extends Controller
             if ($medicoPerfil) {
                 $query->where('medico_id', $medicoPerfil->id);
             }
+        } elseif (Auth::user()->rol->nombre === 'Paciente') {
+            // El paciente solo ve sus propias citas (CU17 / privacidad)
+            $query->where('paciente_id', $this->pacienteAutenticadoId() ?? 0);
         } elseif (!empty($medicoId)) {
             $query->where('medico_id', $medicoId);
         }
@@ -208,6 +219,8 @@ class CitaController extends Controller
      */
     public function show(Cita $cita)
     {
+        $this->autorizarPacientePropietario($cita);
+
         $cita->load([
             'paciente.persona',
             'medico.persona',
@@ -223,6 +236,290 @@ class CitaController extends Controller
         $estadosDisponibles = EstadoCita::all();
 
         return view('citas.show', compact('cita', 'estadosDisponibles'));
+    }
+
+    // =========================================================================
+    // 3. UPDATE (Reprogramar Cita - CU16 / RF08)
+    // =========================================================================
+
+    /**
+     * [UPDATE - Vista]: Formulario para reprogramar la cita a una nueva fecha y ficha libre (CU16)
+     */
+    public function editReprogramar(Cita $cita)
+    {
+        $cita->load(['paciente.persona', 'medico.persona', 'especialidad', 'estadoCita', 'ficha']);
+
+        if (!$this->esReprogramableOCancelable($cita)) {
+            return redirect()->route('citas.show', $cita)
+                ->with('error', "La cita {$cita->codigo} está {$cita->estadoCita->nombre}: solo se reprograman citas Programadas o Confirmadas (RN20).");
+        }
+
+        return view('citas.reprogramar', compact('cita'));
+    }
+
+    /**
+     * [UPDATE - Guardar]: Cambia fecha y ficha validando estado, horario, bloqueos y disponibilidad (CU16 / RN13)
+     */
+    public function reprogramar(Request $request, Cita $cita)
+    {
+        $request->validate([
+            'fecha' => 'required|date|after_or_equal:today',
+            'ficha_id' => 'required|exists:fichas,id',
+            'motivo' => 'required|string|min:5|max:500',
+        ], [
+            'fecha.after_or_equal' => 'No se puede reprogramar a una fecha pasada (RN06).',
+            'ficha_id.required' => 'Debe seleccionar una ficha libre para la nueva fecha.',
+            'motivo.required' => 'Indique el motivo de la reprogramación.',
+            'motivo.min' => 'El motivo debe tener al menos 5 caracteres.',
+        ]);
+
+        $fecha = $request->input('fecha');
+        $ficha = Ficha::with('horario')->findOrFail($request->input('ficha_id'));
+        $motivo = trim($request->input('motivo'));
+
+        try {
+            $cita = DB::transaction(function () use ($cita, $fecha, $ficha, $motivo) {
+                // Bloqueo pesimista de la cita para evitar dos reprogramaciones simultáneas
+                $cita = Cita::with(['estadoCita', 'paciente.persona'])->lockForUpdate()->findOrFail($cita->id);
+
+                // a) Estado reprogramable (RN20)
+                if (!$this->esReprogramableOCancelable($cita)) {
+                    throw new \DomainException("La cita está {$cita->estadoCita->nombre}: no se puede reprogramar.");
+                }
+
+                // b) La ficha pertenece a una jornada activa del mismo médico para ese día de la semana
+                $dia = $this->diaSemana($fecha);
+                if (!$ficha->horario || (int) $ficha->horario->medico_id !== (int) $cita->medico_id
+                    || $ficha->horario->dia_semana !== $dia || !$ficha->horario->estado || !$ficha->estado) {
+                    throw new \DomainException('La ficha seleccionada no corresponde al horario del médico en esa fecha.');
+                }
+
+                // c) No es la misma fecha y ficha actual
+                if ($cita->fecha->toDateString() === $fecha && (int) $cita->ficha_id === (int) $ficha->id) {
+                    throw new \DomainException('Seleccione una fecha o ficha diferente a la actual.');
+                }
+
+                // d) Si es hoy, la ficha no debe haber pasado
+                if ($fecha === today()->toDateString() && substr($ficha->hora_inicio, 0, 5) <= now()->format('H:i')) {
+                    throw new \DomainException('La ficha seleccionada ya pasó. Elija un horario posterior.');
+                }
+
+                // e) Bloqueos de agenda (CU30)
+                if ($bloqueo = $this->bloqueoQueAfecta($cita->medico_id, $fecha, $ficha)) {
+                    throw new \DomainException("La agenda del médico está bloqueada en esa fecha ({$bloqueo->tipo}: {$bloqueo->motivo}).");
+                }
+
+                // f) Ficha libre (RN07). La BD lo refuerza con trg_validar_ficha_libre.
+                $ocupada = Cita::where('ficha_id', $ficha->id)
+                    ->where('fecha', $fecha)
+                    ->where('id', '!=', $cita->id)
+                    ->whereNotIn('estado_id', $this->estadosQueLiberanFicha())
+                    ->exists();
+                if ($ocupada) {
+                    throw new \DomainException('La ficha seleccionada acaba de ser ocupada por otra cita. Elija otra (RN07).');
+                }
+
+                $anterior = $cita->fecha->format('d/m/Y') . ' ' . substr($cita->hora_inicio, 0, 5);
+                $nuevo = Carbon::parse($fecha)->format('d/m/Y') . ' ' . substr($ficha->hora_inicio, 0, 5);
+
+                // g) Actualizar fecha, ficha y horario conservando el código
+                $cita->update([
+                    'fecha' => $fecha,
+                    'ficha_id' => $ficha->id,
+                    'hora_inicio' => $ficha->hora_inicio,
+                    'hora_fin' => $ficha->hora_fin,
+                ]);
+
+                // h) Historial (el estado se mantiene) y bitácora
+                HistorialEstadoCita::create([
+                    'cita_id' => $cita->id,
+                    'estado_anterior_id' => $cita->estado_id,
+                    'estado_nuevo_id' => $cita->estado_id,
+                    'usuario_id' => Auth::id(),
+                    'fecha_hora' => now(),
+                    'motivo' => "Reprogramación de {$anterior} a {$nuevo}. Motivo: {$motivo}",
+                ]);
+
+                BitacoraService::registrar(
+                    accion: 'REPROGRAMAR_CITA',
+                    tabla: 'citas',
+                    registroId: $cita->id,
+                    detalles: "Cita {$cita->codigo} reprogramada de {$anterior} a {$nuevo}. Motivo: {$motivo}"
+                );
+
+                // i) Aviso al paciente (CU31)
+                Recordatorio::create([
+                    'cita_id' => $cita->id,
+                    'tipo' => 'Reprogramacion',
+                    'mensaje' => "Su cita {$cita->codigo} fue reprogramada para el {$nuevo}.",
+                    'fecha_programada' => now(),
+                    'estado' => 'Pendiente',
+                ]);
+
+                return $cita;
+            });
+        } catch (\DomainException $e) {
+            return back()->withInput()->withErrors(['ficha_id' => $e->getMessage()]);
+        } catch (QueryException $e) {
+            return back()->withInput()->withErrors(['ficha_id' => 'No se pudo reprogramar: ' . $this->mensajeBD($e)]);
+        }
+
+        return redirect()->route('citas.show', $cita)
+            ->with('success', "Cita {$cita->codigo} reprogramada correctamente. La ficha anterior quedó libre.");
+    }
+
+    // =========================================================================
+    // 4. DELETE LÓGICO (Cancelar Cita - CU17 / RF09) — la cita no se elimina
+    // =========================================================================
+
+    /**
+     * [CANCELAR - Vista]: Muestra la cita y solicita el motivo de cancelación (CU17)
+     */
+    public function editCancelar(Cita $cita)
+    {
+        $this->autorizarCancelacion($cita);
+        $cita->load(['paciente.persona', 'medico.persona', 'especialidad', 'estadoCita', 'ficha']);
+
+        if (!$this->esReprogramableOCancelable($cita)) {
+            return redirect()->route('citas.show', $cita)
+                ->with('error', "La cita {$cita->codigo} está {$cita->estadoCita->nombre}: solo se cancelan citas Programadas o Confirmadas (RN20).");
+        }
+
+        return view('citas.cancelar', compact('cita'));
+    }
+
+    /**
+     * [CANCELAR - Guardar]: Cambia el estado a Cancelada con su motivo, historial y bitácora (CU17 / RN09, RN21)
+     * En PostgreSQL usa el procedimiento almacenado sp_cancelar_cita (Word Cap. 6.2.3.3).
+     */
+    public function cancelar(Request $request, Cita $cita)
+    {
+        $this->autorizarCancelacion($cita);
+
+        $request->validate([
+            'motivo_cancelacion' => 'required|string|min:5|max:500',
+        ], [
+            'motivo_cancelacion.required' => 'Indique el motivo de la cancelación (RN21).',
+            'motivo_cancelacion.min' => 'El motivo debe tener al menos 5 caracteres.',
+        ]);
+
+        $motivo = trim($request->input('motivo_cancelacion'));
+
+        try {
+            DB::transaction(function () use ($cita, $motivo) {
+                $cita = Cita::with('estadoCita')->lockForUpdate()->findOrFail($cita->id);
+
+                if (!$this->esReprogramableOCancelable($cita)) {
+                    throw new \DomainException("La cita está {$cita->estadoCita->nombre}: no se puede cancelar (RN20).");
+                }
+
+                if (DB::getDriverName() === 'pgsql') {
+                    // Estado Cancelada + motivo + historial + bitácora en la base de datos
+                    DB::statement('CALL sp_cancelar_cita(?, ?, ?)', [$cita->id, Auth::id(), $motivo]);
+                } else {
+                    $cancelada = EstadoCita::where('nombre', 'Cancelada')->value('id');
+                    $anterior = $cita->estado_id;
+                    $cita->update(['estado_id' => $cancelada, 'motivo_cancelacion' => $motivo]);
+                    HistorialEstadoCita::create([
+                        'cita_id' => $cita->id, 'estado_anterior_id' => $anterior, 'estado_nuevo_id' => $cancelada,
+                        'usuario_id' => Auth::id(), 'fecha_hora' => now(), 'motivo' => $motivo,
+                    ]);
+                    BitacoraService::registrar('CANCELAR_CITA', 'citas', $cita->id, "Cita {$cita->codigo} cancelada. Motivo: {$motivo}");
+                }
+
+                // Aviso de cancelación al paciente (CU31)
+                Recordatorio::create([
+                    'cita_id' => $cita->id,
+                    'tipo' => 'Cancelacion',
+                    'mensaje' => "Su cita {$cita->codigo} del " . $cita->fecha->format('d/m/Y') . ' a las ' . substr($cita->hora_inicio, 0, 5) . ' fue cancelada.',
+                    'fecha_programada' => now(),
+                    'estado' => 'Pendiente',
+                ]);
+            });
+        } catch (\DomainException $e) {
+            return redirect()->route('citas.show', $cita)->with('error', $e->getMessage());
+        } catch (QueryException $e) {
+            return back()->withInput()->withErrors(['motivo_cancelacion' => 'No se pudo cancelar: ' . $this->mensajeBD($e)]);
+        }
+
+        return redirect()->route('citas.show', $cita)
+            ->with('success', "Cita {$cita->codigo} cancelada. La ficha quedó disponible para otros pacientes.");
+    }
+
+    // =========================================================================
+    // Validaciones compartidas (ControlValidacionCita / ControlValidacionTransicion)
+    // =========================================================================
+
+    /** Solo las citas Programadas o Confirmadas se reprograman o cancelan (RN20). */
+    private function esReprogramableOCancelable(Cita $cita): bool
+    {
+        $estado = $cita->estadoCita->nombre ?? EstadoCita::find($cita->estado_id)?->nombre;
+        return in_array($estado, ['Programada', 'Confirmada'], true);
+    }
+
+    /** Estados que no ocupan ficha (RN09): Cancelada e Inasistencia. */
+    private function estadosQueLiberanFicha(): array
+    {
+        return EstadoCita::whereIn('nombre', ['Cancelada', 'Inasistencia'])->pluck('id')->all();
+    }
+
+    /** Id del paciente vinculado al usuario autenticado (rol Paciente). */
+    private function pacienteAutenticadoId(): ?int
+    {
+        return Paciente::where('persona_id', Auth::user()->persona_id)->value('id');
+    }
+
+    /** El paciente solo puede ver o cancelar sus propias citas (CU17 - excepción). */
+    private function autorizarPacientePropietario(Cita $cita): void
+    {
+        if (Auth::user()->rol->nombre === 'Paciente' && (int) $cita->paciente_id !== (int) $this->pacienteAutenticadoId()) {
+            abort(403, 'Acceso denegado: la cita no le pertenece.');
+        }
+    }
+
+    /** Cancelan: Administrador, Recepcionista y el Paciente dueño de la cita (actores del CU17). */
+    private function autorizarCancelacion(Cita $cita): void
+    {
+        if (!in_array(Auth::user()->rol->nombre, ['Administrador', 'Recepcionista', 'Paciente'], true)) {
+            abort(403, 'Acceso denegado: su rol no puede cancelar citas.');
+        }
+        $this->autorizarPacientePropietario($cita);
+    }
+
+    /** Bloqueo de agenda activo que afecta al médico en la fecha (y a la ficha si el bloqueo es por horas). */
+    private function bloqueoQueAfecta($medicoId, string $fecha, ?Ficha $ficha = null): ?BloqueoAgenda
+    {
+        $bloqueos = BloqueoAgenda::where('estado', true)
+            ->whereDate('fecha_inicio', '<=', $fecha)
+            ->whereDate('fecha_fin', '>=', $fecha)
+            ->where(fn ($q) => $q->whereNull('medico_id')->orWhere('medico_id', $medicoId))
+            ->get();
+
+        foreach ($bloqueos as $b) {
+            if (!$b->hora_inicio || !$b->hora_fin || !$ficha) {
+                return $b; // bloqueo de día completo
+            }
+            if (substr($ficha->hora_inicio, 0, 5) < substr($b->hora_fin, 0, 5) && substr($ficha->hora_fin, 0, 5) > substr($b->hora_inicio, 0, 5)) {
+                return $b; // la ficha se cruza con el bloqueo por horas
+            }
+        }
+        return null;
+    }
+
+    private function diaSemana(string $fecha): string
+    {
+        $dias = [1 => 'Lunes', 2 => 'Martes', 3 => 'Miercoles', 4 => 'Jueves', 5 => 'Viernes', 6 => 'Sabado', 7 => 'Domingo'];
+        return $dias[Carbon::parse($fecha)->dayOfWeekIso];
+    }
+
+    /** Extrae el mensaje legible de una excepción lanzada por un trigger de PostgreSQL. */
+    private function mensajeBD(QueryException $e): string
+    {
+        $msg = $e->getPrevious()?->getMessage() ?? $e->getMessage();
+        if (preg_match('/ERROR:\s+(.*?)(\n|CONTEXT|\(SQL|$)/s', $msg, $m)) {
+            return trim($m[1]);
+        }
+        return 'error de base de datos.';
     }
 
     // =========================================================================
@@ -262,24 +559,36 @@ class CitaController extends Controller
             ]);
         }
 
-        // Obtener fichas ocupadas en esa fecha (citas no canceladas)
-        $estadoCancelada = EstadoCita::where('nombre', 'Cancelada')->first();
-        $idCancelada = $estadoCancelada ? $estadoCancelada->id : 4;
-
+        // Fichas ocupadas en esa fecha: citas activas (Cancelada e Inasistencia liberan la ficha - RN09)
+        // Al reprogramar se excluye la propia cita (excluir_cita_id).
         $fichasOcupadas = Cita::where('medico_id', $medicoId)
             ->where('fecha', $fecha)
-            ->where('estado_id', '!=', $idCancelada)
+            ->whereNotIn('estado_id', $this->estadosQueLiberanFicha())
+            ->when($request->filled('excluir_cita_id'), fn ($q) => $q->where('id', '!=', $request->input('excluir_cita_id')))
             ->pluck('ficha_id')
             ->toArray();
 
-        // Mapear fichas del horario con estado de disponibilidad
-        $fichasResultado = $horario->fichas()->orderBy('numero')->get()->map(function ($f) use ($fichasOcupadas) {
+        $esHoy = $fecha === today()->toDateString();
+        $horaActual = now()->format('H:i');
+
+        // Mapear fichas del horario con su disponibilidad y el motivo cuando no está libre
+        $fichasResultado = $horario->fichas()->where('estado', true)->orderBy('numero')->get()->map(function ($f) use ($fichasOcupadas, $medicoId, $fecha, $esHoy, $horaActual) {
+            $motivo = null;
+            if (in_array($f->id, $fichasOcupadas)) {
+                $motivo = 'Ocupada';
+            } elseif ($esHoy && substr($f->hora_inicio, 0, 5) <= $horaActual) {
+                $motivo = 'Hora pasada';
+            } elseif ($this->bloqueoQueAfecta($medicoId, $fecha, $f)) {
+                $motivo = 'Bloqueada';
+            }
+
             return [
                 'id' => $f->id,
                 'numero' => $f->numero,
                 'hora_inicio' => substr($f->hora_inicio, 0, 5),
                 'hora_fin' => substr($f->hora_fin, 0, 5),
-                'disponible' => !in_array($f->id, $fichasOcupadas),
+                'disponible' => $motivo === null,
+                'motivo' => $motivo,
             ];
         });
 

@@ -73,9 +73,19 @@
         </div>
     </div>
 
-    <!-- Barra de Acciones de Ciclo 1 (CU15: Comprobante) -->
+    <!-- Barra de Acciones: Comprobante (CU15), Reprogramar (CU16) y Cancelar (CU17) -->
+    @php
+        $rolActual = Auth::user()->rol->nombre ?? '';
+        $modificable = in_array($cita->estadoCita->nombre ?? '', ['Programada', 'Confirmada']);
+    @endphp
     <div class="btn-group">
         <a href="{{ route('citas.index') }}" class="btn-h btn-back">&larr; Volver a la Lista</a>
+        @if($modificable && in_array($rolActual, ['Administrador', 'Recepcionista']))
+            <a href="{{ route('citas.reprogramar', $cita) }}" class="btn-h btn-reschedule">🔁 Reprogramar</a>
+        @endif
+        @if($modificable && in_array($rolActual, ['Administrador', 'Recepcionista', 'Paciente']))
+            <a href="{{ route('citas.cancelar', $cita) }}" class="btn-h btn-cancel-appt">✕ Cancelar Cita</a>
+        @endif
         <button type="button" onclick="window.print()" class="btn-h" style="background: #0284c7; color: #fff;">🖨️ Imprimir Comprobante</button>
     </div>
 </div>
