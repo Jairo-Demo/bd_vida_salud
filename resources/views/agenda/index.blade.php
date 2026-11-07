@@ -173,8 +173,11 @@
                                     @if($puedeGestionar && in_array($c->estadoCita->nombre, ['Programada', 'Confirmada']) && $vencida($c))
                                         <form action="{{ route('citas.inasistencia', $c) }}" method="POST" style="display:inline" onsubmit="return confirm('¿Registrar la inasistencia de {{ $c->codigo }}?')">@csrf @method('PATCH')<button class="act act-warn">⚠ Inasistencia</button></form>
                                     @endif
-                                    @if($esMedico && $c->estadoCita->nombre === 'Confirmada' && Route::has('consultas.create'))
+                                    @if($esMedico && in_array($c->estadoCita->nombre, ['Programada', 'Confirmada']) && $c->fecha->isSameDay(today()) && Route::has('consultas.create'))
                                         <a href="{{ route('consultas.create', ['cita' => $c->id]) }}" class="act act-att">🩺 Atender</a>
+                                    @endif
+                                    @if($esMedico && $c->estadoCita->nombre === 'Atendida' && $c->consulta && Route::has('consultas.show'))
+                                        <a href="{{ route('consultas.show', $c->consulta) }}" class="act act-att">📋 Consulta</a>
                                     @endif
                                     <a href="{{ route('citas.show', $c) }}" class="act act-info">Ver</a>
                                 </td>

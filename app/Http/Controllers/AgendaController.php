@@ -65,7 +65,7 @@ class AgendaController extends Controller
             $bloqueo = $this->bloqueo($medico->id, $fecha);
 
             if ($horario) {
-                $citas = Cita::with(['paciente.persona', 'especialidad', 'estadoCita'])
+                $citas = Cita::with(['paciente.persona', 'especialidad', 'estadoCita', 'consulta'])
                     ->where('medico_id', $medico->id)
                     ->whereDate('fecha', $fecha)
                     ->get()

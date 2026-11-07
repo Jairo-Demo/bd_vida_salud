@@ -11,6 +11,11 @@ use App\Http\Controllers\HorarioAtencionController;
 use App\Http\Controllers\MedicoController;
 use App\Http\Controllers\PacienteController;
 use App\Http\Controllers\UsuarioController;
+use App\Http\Controllers\AntecedenteAlergiaController;
+use App\Http\Controllers\CatalogoController;
+use App\Http\Controllers\ConsultaController;
+use App\Http\Controllers\HistoriaClinicaController;
+use App\Http\Controllers\RecetaController;
 use Illuminate\Support\Facades\Route;
 
 // Redireccion inicial al login
@@ -88,5 +93,47 @@ Route::middleware('auth')->group(function () {
         Route::patch('citas/{cita}/confirmar', [CitaEstadoController::class, 'confirmar'])->name('citas.confirmar');          // CU18
         Route::patch('citas/{cita}/inasistencia', [CitaEstadoController::class, 'inasistencia'])->name('citas.inasistencia'); // CU19
         Route::post('agenda/inasistencias', [CitaEstadoController::class, 'inasistenciaMasiva'])->name('agenda.inasistencias'); // CU19 alterno A
+    });
+
+    // Modulo P7: Atencion Medica e Historia Clinica (CU23 - CU28)
+    Route::middleware('rol:Medico')->group(function () {
+        // Registrar atencion medica (CU23)
+        Route::get('consultas', [ConsultaController::class, 'index'])->name('consultas.index');
+        Route::get('consultas/create', [ConsultaController::class, 'create'])->name('consultas.create');
+        Route::post('consultas', [ConsultaController::class, 'store'])->name('consultas.store');
+        Route::get('consultas/{consulta}', [ConsultaController::class, 'show'])->name('consultas.show');
+
+        // Alergias, antecedentes y medicacion habitual (CU24)
+        Route::get('antecedentes', [AntecedenteAlergiaController::class, 'index'])->name('antecedentes.index');
+        Route::post('antecedentes/{paciente}/alergias', [AntecedenteAlergiaController::class, 'storeAlergia'])->name('antecedentes.alergias.store');
+        Route::delete('antecedentes/{paciente}/alergias/{alergia}', [AntecedenteAlergiaController::class, 'destroyAlergia'])->name('antecedentes.alergias.destroy');
+        Route::post('antecedentes/{paciente}/antecedentes', [AntecedenteAlergiaController::class, 'storeAntecedente'])->name('antecedentes.antecedentes.store');
+        Route::delete('antecedentes/registro/{antecedente}', [AntecedenteAlergiaController::class, 'destroyAntecedente'])->name('antecedentes.antecedentes.destroy');
+        Route::post('antecedentes/{paciente}/medicamentos', [AntecedenteAlergiaController::class, 'storeMedicamento'])->name('antecedentes.medicamentos.store');
+        Route::delete('antecedentes/{paciente}/medicamentos/{medicamento}', [AntecedenteAlergiaController::class, 'destroyMedicamento'])->name('antecedentes.medicamentos.destroy');
+
+        // Emitir receta con verificacion de alergias (CU25, CU26)
+        Route::get('recetas', [RecetaController::class, 'index'])->name('recetas.index');
+        Route::get('recetas/create', [RecetaController::class, 'create'])->name('recetas.create');
+        Route::get('recetas/verificar-alergia', [RecetaController::class, 'verificarAlergia'])->name('recetas.verificarAlergia');
+        Route::post('recetas', [RecetaController::class, 'store'])->name('recetas.store');
+    });
+
+    // Historia clinica y receta: medico (pacientes de su agenda) y paciente (solo la suya) - CU28 / RN28
+    Route::middleware('rol:Medico,Paciente')->group(function () {
+        Route::get('historia-clinica', [HistoriaClinicaController::class, 'index'])->name('historia.index');
+        Route::get('historia-clinica/{paciente}', [HistoriaClinicaController::class, 'show'])->name('historia.show');
+        Route::get('recetas/{receta}', [RecetaController::class, 'show'])->name('recetas.show');
+    });
+
+    // Catalogos de medicamentos y alergias (CU27)
+    Route::middleware('rol:Administrador')->group(function () {
+        Route::get('catalogos', [CatalogoController::class, 'index'])->name('catalogos.index');
+        Route::post('catalogos/medicamentos', [CatalogoController::class, 'storeMedicamento'])->name('catalogos.medicamentos.store');
+        Route::put('catalogos/medicamentos/{medicamento}', [CatalogoController::class, 'updateMedicamento'])->name('catalogos.medicamentos.update');
+        Route::patch('catalogos/medicamentos/{medicamento}/estado', [CatalogoController::class, 'toggleMedicamento'])->name('catalogos.medicamentos.estado');
+        Route::post('catalogos/alergias', [CatalogoController::class, 'storeAlergia'])->name('catalogos.alergias.store');
+        Route::put('catalogos/alergias/{alergia}', [CatalogoController::class, 'updateAlergia'])->name('catalogos.alergias.update');
+        Route::patch('catalogos/alergias/{alergia}/estado', [CatalogoController::class, 'toggleAlergia'])->name('catalogos.alergias.estado');
     });
 });

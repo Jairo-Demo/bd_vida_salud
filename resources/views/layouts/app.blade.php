@@ -56,6 +56,7 @@
             color: #0f172a;
             font-weight: 700;
             font-size: 17px;
+            white-space: nowrap;
         }
         .brand-icon {
             width: 34px;
@@ -79,6 +80,7 @@
             position: relative;
         }
         .dropdown-btn {
+            white-space: nowrap;
             background: transparent;
             border: 1px solid transparent;
             padding: 7px 12px;
