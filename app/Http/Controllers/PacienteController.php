@@ -241,6 +241,11 @@ class PacienteController extends Controller
      */
     public function destroy(Paciente $paciente)
     {
+        // Seguridad: solo el Administrador tiene permiso para eliminar o desactivar expedientes
+        if (Auth::user()->rol?->nombre !== 'Administrador') {
+            abort(403, 'Acceso denegado: solo el Administrador puede eliminar o desactivar expedientes de pacientes.');
+        }
+
         // Verificar si tiene citas asociadas
         $tieneCitas = $paciente->citas()->exists();
 
@@ -286,6 +291,11 @@ class PacienteController extends Controller
      */
     public function toggleEstado(Paciente $paciente)
     {
+        // Seguridad: solo Administrador y Recepcionista pueden cambiar el estado
+        if (!in_array(Auth::user()->rol?->nombre, ['Administrador', 'Recepcionista'])) {
+            abort(403, 'Acceso denegado: solo Administrador y Recepción pueden modificar el estado activo de pacientes.');
+        }
+
         $nuevoEstado = !$paciente->estado;
 
         DB::transaction(function () use ($paciente, $nuevoEstado) {

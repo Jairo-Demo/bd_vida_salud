@@ -57,9 +57,9 @@ services:
     container_name: vidasalud_postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: bd_vida_salud
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: admin123
+      POSTGRES_DB: ${DB_DATABASE:-bd_vida_salud}
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-admin123}
     ports:
       - "5432:5432"   # abierto a proposito para conectarse con pgAdmin 4 (restringir la IP en el Security Group)
     volumes:

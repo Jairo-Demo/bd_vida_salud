@@ -102,73 +102,83 @@ class CitaController extends Controller
             ]);
         }
 
-        // 3. Verificación Anti-Solapamiento en Servidor (RN07, RN13):
-        // Impedir que dos citas activas (no canceladas) ocupen la misma ficha y fecha para el médico
-        // Las citas Canceladas o en Inasistencia no ocupan la ficha (RN09)
-        $solapada = Cita::where('medico_id', $medicoId)
-            ->where('fecha', $fecha)
-            ->where('ficha_id', $fichaId)
-            ->whereNotIn('estado_id', $this->estadosQueLiberanFicha())
-            ->exists();
-
-        if ($solapada) {
-            return back()->withInput()->withErrors([
-                'ficha_id' => 'Conflicto de horario: El turno seleccionado acaba de ser reservado por otro usuario. Por favor seleccione otro turno (RN07).',
-            ]);
-        }
-
         // 4. Obtener Estado inicial "Programada"
         $estadoProgramada = EstadoCita::firstOrCreate(
             ['nombre' => 'Programada'],
             ['descripcion' => 'Cita reservada pendiente de confirmación']
         );
 
-        // 5. Transacción atómica de guardado
-        $cita = DB::transaction(function () use ($request, $ficha, $estadoProgramada, $fecha) {
-            // A. Autogenerar código único correlativo (ej. CM-0001)
-            $ultimoId = Cita::max('id') ?? 0;
-            $codigo = 'CM-' . str_pad($ultimoId + 1, 4, '0', STR_PAD_LEFT);
+        // 5. Transacción atómica de guardado con bloqueo pesimista anti-concurrencia (RN07, RN13, RNF09)
+        try {
+            $cita = DB::transaction(function () use ($request, $fichaId, $medicoId, $estadoProgramada, $fecha) {
+                // A. Bloqueo pesimista de fila en PostgreSQL (SELECT ... FOR UPDATE) para serializar reservas concurrentes
+                $fichaBloqueada = Ficha::where('id', $fichaId)->lockForUpdate()->firstOrFail();
 
-            // B. Crear registro central de Cita
-            $nuevaCita = Cita::create([
-                'codigo' => $codigo,
-                'paciente_id' => $request->input('paciente_id'),
-                'medico_id' => $request->input('medico_id'),
-                'especialidad_id' => $request->input('especialidad_id'),
-                'ficha_id' => $ficha->id,
-                'estado_id' => $estadoProgramada->id,
-                'usuario_registro_id' => Auth::id(),
-                'fecha' => $fecha,
-                'hora_inicio' => $ficha->hora_inicio,
-                'hora_fin' => $ficha->hora_fin,
-                'motivo' => trim($request->input('motivo')),
-                'modalidad' => $request->input('modalidad'),
-                'fecha_creacion' => now(),
+                // B. Verificación atómica anti-solapamiento con la ficha bloqueada (RN07, RN09)
+                $solapada = Cita::where('medico_id', $medicoId)
+                    ->where('fecha', $fecha)
+                    ->where('ficha_id', $fichaId)
+                    ->whereNotIn('estado_id', $this->estadosQueLiberanFicha())
+                    ->exists();
+
+                if ($solapada) {
+                    throw new \DomainException('Conflicto de horario: El turno seleccionado acaba de ser reservado por otro usuario. Por favor seleccione otro turno (RN07).');
+                }
+
+                // C. Autogenerar código único correlativo (ej. CM-0001)
+                $ultimoId = Cita::max('id') ?? 0;
+                $codigo = 'CM-' . str_pad($ultimoId + 1, 4, '0', STR_PAD_LEFT);
+
+                // D. Crear registro central de Cita
+                $nuevaCita = Cita::create([
+                    'codigo' => $codigo,
+                    'paciente_id' => $request->input('paciente_id'),
+                    'medico_id' => $request->input('medico_id'),
+                    'especialidad_id' => $request->input('especialidad_id'),
+                    'ficha_id' => $fichaBloqueada->id,
+                    'estado_id' => $estadoProgramada->id,
+                    'usuario_registro_id' => Auth::id(),
+                    'fecha' => $fecha,
+                    'hora_inicio' => $fichaBloqueada->hora_inicio,
+                    'hora_fin' => $fichaBloqueada->hora_fin,
+                    'motivo' => trim($request->input('motivo')),
+                    'modalidad' => $request->input('modalidad'),
+                    'fecha_creacion' => now(),
+                ]);
+
+                // E. Registro inicial inmutable en historial_estados_cita
+                HistorialEstadoCita::create([
+                    'cita_id' => $nuevaCita->id,
+                    'estado_anterior_id' => null,
+                    'estado_nuevo_id' => $estadoProgramada->id,
+                    'usuario_id' => Auth::id(),
+                    'fecha_hora' => now(),
+                    'motivo' => 'Registro y programación inicial de la cita médica.',
+                ]);
+
+                // F. Auditoría en Bitácora
+                BitacoraService::registrar(
+                    accion: 'PROGRAMAR_CITA',
+                    tabla: 'citas',
+                    registroId: $nuevaCita->id,
+                    detalles: "Cita programada {$codigo} para {$nuevaCita->paciente->nombre_completo} con Dr(a). {$nuevaCita->medico->nombre_completo} el {$fecha} ({$fichaBloqueada->hora_inicio}-{$fichaBloqueada->hora_fin})"
+                );
+
+                // G. Recordatorio automático 24 horas antes (CU31 - alterno A)
+                RecordatorioService::programarProximaCita($nuevaCita);
+
+                return $nuevaCita;
+            });
+        } catch (\DomainException $e) {
+            return back()->withInput()->withErrors(['ficha_id' => $e->getMessage()]);
+        } catch (QueryException $e) {
+            // Error de concurrencia capturado por el trigger trg_validar_ficha_libre o constraint UNIQUE en PostgreSQL
+            return back()->withInput()->withErrors([
+                'ficha_id' => 'Conflicto de horario concurrente: El turno seleccionado fue reservado simultáneamente por otro usuario (RN07).',
             ]);
+        }
 
-            // C. Registro inicial inmutable en historial_estados_cita
-            HistorialEstadoCita::create([
-                'cita_id' => $nuevaCita->id,
-                'estado_anterior_id' => null,
-                'estado_nuevo_id' => $estadoProgramada->id,
-                'usuario_id' => Auth::id(),
-                'fecha_hora' => now(),
-                'motivo' => 'Registro y programación inicial de la cita médica.',
-            ]);
-
-            // D. Auditoría en Bitácora
-            BitacoraService::registrar(
-                accion: 'PROGRAMAR_CITA',
-                tabla: 'citas',
-                registroId: $nuevaCita->id,
-                detalles: "Cita programada {$codigo} para {$nuevaCita->paciente->nombre_completo} con Dr(a). {$nuevaCita->medico->nombre_completo} el {$fecha} ({$ficha->hora_inicio}-{$ficha->hora_fin})"
-            );
-
-            // E. Recordatorio automático 24 horas antes (CU31 - alterno A)
-            RecordatorioService::programarProximaCita($nuevaCita);
-
-            return $nuevaCita;
-        });
+        return redirect()->route('citas.show', $cita)->with('success', "Cita médica {$cita->codigo} agendada exitosamente.");
 
         return redirect()->route('citas.show', $cita)->with('success', "Cita médica {$cita->codigo} agendada exitosamente.");
     }
