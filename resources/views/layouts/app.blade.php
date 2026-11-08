@@ -232,6 +232,12 @@
             color: #64748b;
             text-align: center;
         }
+        /* Administrador ve hasta 8 paquetes: en pantallas medianas se compacta el menu */
+        @media (max-width: 1440px) {
+            .brand span { display: none; }
+            .package-menu { gap: 2px; }
+            .dropdown-btn { padding: 7px 8px; font-size: 12.5px; gap: 4px; }
+        }
         @media (max-width: 900px) {
             .package-menu { display: none; }
             .user-pill { display: none; }
@@ -259,7 +265,7 @@
             <div class="package-menu">
                 @foreach($paquetesMenu as $pkg)
                     <div class="dropdown">
-                        <button class="dropdown-btn">
+                        <button class="dropdown-btn" title="{{ $pkg['codigo'] }} · {{ $pkg['nombre'] }}">
                             <span class="pkg-badge">{{ $pkg['codigo'] }}</span>
                             <span>{{ $pkg['corto'] }}</span>
                             <span style="font-size: 9px; margin-left: 2px;">▼</span>

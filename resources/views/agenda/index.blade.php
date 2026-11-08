@@ -129,7 +129,7 @@
     </div>
 
     @if($bloqueo)
-        <div class="notice notice-err">⛔ Agenda bloqueada en esta fecha: <strong>{{ $bloqueo->tipo }}</strong> — {{ $bloqueo->motivo }}</div>
+        <div class="notice notice-err">⛔ Agenda bloqueada: <strong>{{ $bloqueo->tipo }}</strong> {{ $bloqueo->descripcion_periodo }} — {{ $bloqueo->motivo }}</div>
     @endif
 
     @if(!$horario)

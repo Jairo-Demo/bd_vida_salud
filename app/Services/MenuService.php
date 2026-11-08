@@ -50,7 +50,7 @@ class MenuService
             [
                 'codigo' => 'P1',
                 'nombre' => 'Acceso, Usuarios y Seguridad',
-                'corto' => 'Seguridad y Usuarios',
+                'corto' => 'Seguridad',
                 'icono' => '🛡️',
                 'descripcion' => 'Control de cuentas de acceso, roles y permisos, y bitacora de auditoria.',
                 'opciones' => [
@@ -124,7 +124,7 @@ class MenuService
             [
                 'codigo' => 'P3',
                 'nombre' => 'Gestion Medica y Horarios',
-                'corto' => 'Medicos y Horarios',
+                'corto' => 'Médicos',
                 'icono' => '🩺',
                 'descripcion' => 'Especialidades, medicos, horarios con generacion de fichas y bloqueos de agenda.',
                 'opciones' => [
@@ -165,7 +165,7 @@ class MenuService
             [
                 'codigo' => 'P4',
                 'nombre' => 'Programacion de Citas',
-                'corto' => 'Citas Medicas',
+                'corto' => 'Citas',
                 'icono' => '📅',
                 'descripcion' => 'Reserva de citas sin solapamiento, reprogramacion y cancelacion.',
                 'opciones' => [
@@ -224,7 +224,7 @@ class MenuService
             [
                 'codigo' => 'P7',
                 'nombre' => 'Atencion Medica e Historia Clinica',
-                'corto' => 'Atencion Medica',
+                'corto' => 'Atención',
                 'icono' => '💊',
                 'descripcion' => 'Consultas, alergias y antecedentes, recetas con verificacion de alergias e historia clinica.',
                 'opciones' => [

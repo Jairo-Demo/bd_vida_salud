@@ -3,6 +3,7 @@
 use App\Http\Controllers\AgendaController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BitacoraController;
+use App\Http\Controllers\BloqueoAgendaController;
 use App\Http\Controllers\CitaController;
 use App\Http\Controllers\CitaEstadoController;
 use App\Http\Controllers\DashboardController;
@@ -124,6 +125,14 @@ Route::middleware('auth')->group(function () {
         Route::get('historia-clinica', [HistoriaClinicaController::class, 'index'])->name('historia.index');
         Route::get('historia-clinica/{paciente}', [HistoriaClinicaController::class, 'show'])->name('historia.show');
         Route::get('recetas/{receta}', [RecetaController::class, 'show'])->name('recetas.show');
+    });
+
+    // Modulo P3 - Ciclo 2: Bloqueos de agenda (CU30)
+    Route::middleware('rol:Administrador')->group(function () {
+        Route::get('bloqueos', [BloqueoAgendaController::class, 'index'])->name('bloqueos.index');
+        Route::post('bloqueos', [BloqueoAgendaController::class, 'store'])->name('bloqueos.store');
+        Route::get('bloqueos/{bloqueo}', [BloqueoAgendaController::class, 'show'])->name('bloqueos.show');
+        Route::patch('bloqueos/{bloqueo}/estado', [BloqueoAgendaController::class, 'toggleEstado'])->name('bloqueos.estado');
     });
 
     // Catalogos de medicamentos y alergias (CU27)

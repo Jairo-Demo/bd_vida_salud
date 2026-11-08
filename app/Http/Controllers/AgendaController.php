@@ -62,7 +62,8 @@ class AgendaController extends Controller
         if ($medico) {
             $horario = HorarioAtencion::where('medico_id', $medico->id)->where('dia_semana', $dia)->where('estado', true)->first();
             $diasAtencion = $medico->horarios->where('estado', true)->pluck('dia_semana')->unique()->values()->all();
-            $bloqueo = $this->bloqueo($medico->id, $fecha);
+            $bloqueos = BloqueoAgenda::vigentesPara($medico->id, $fecha)->get();
+            $bloqueo = $bloqueos->first();
 
             if ($horario) {
                 $citas = Cita::with(['paciente.persona', 'especialidad', 'estadoCita', 'consulta'])
@@ -79,7 +80,8 @@ class AgendaController extends Controller
 
                     if ($mostrar->isEmpty()) {
                         if (!$estadoId) {
-                            $filas->push(['ficha' => $ficha, 'cita' => null, 'libre' => !$bloqueo]);
+                            $bloqueada = $bloqueos->contains(fn ($b) => $b->afectaHorario($ficha->hora_inicio, $ficha->hora_fin));
+                            $filas->push(['ficha' => $ficha, 'cita' => null, 'libre' => !$bloqueada]);
                         }
                         continue;
                     }
@@ -150,9 +152,6 @@ class AgendaController extends Controller
     /** Bloqueo de agenda de día completo vigente para el médico (CU30). */
     private function bloqueo(int $medicoId, string $fecha): ?BloqueoAgenda
     {
-        return BloqueoAgenda::where('estado', true)
-            ->whereDate('fecha_inicio', '<=', $fecha)->whereDate('fecha_fin', '>=', $fecha)
-            ->where(fn ($q) => $q->whereNull('medico_id')->orWhere('medico_id', $medicoId))
-            ->first();
+        return BloqueoAgenda::vigentesPara($medicoId, $fecha)->get()->first(fn ($b) => $b->esDiaCompleto());
     }
 }

@@ -489,21 +489,8 @@ class CitaController extends Controller
     /** Bloqueo de agenda activo que afecta al médico en la fecha (y a la ficha si el bloqueo es por horas). */
     private function bloqueoQueAfecta($medicoId, string $fecha, ?Ficha $ficha = null): ?BloqueoAgenda
     {
-        $bloqueos = BloqueoAgenda::where('estado', true)
-            ->whereDate('fecha_inicio', '<=', $fecha)
-            ->whereDate('fecha_fin', '>=', $fecha)
-            ->where(fn ($q) => $q->whereNull('medico_id')->orWhere('medico_id', $medicoId))
-            ->get();
-
-        foreach ($bloqueos as $b) {
-            if (!$b->hora_inicio || !$b->hora_fin || !$ficha) {
-                return $b; // bloqueo de día completo
-            }
-            if (substr($ficha->hora_inicio, 0, 5) < substr($b->hora_fin, 0, 5) && substr($ficha->hora_fin, 0, 5) > substr($b->hora_inicio, 0, 5)) {
-                return $b; // la ficha se cruza con el bloqueo por horas
-            }
-        }
-        return null;
+        return BloqueoAgenda::vigentesPara($medicoId, $fecha)->get()
+            ->first(fn ($b) => !$ficha || $b->afectaHorario($ficha->hora_inicio, $ficha->hora_fin));
     }
 
     private function diaSemana(string $fecha): string
