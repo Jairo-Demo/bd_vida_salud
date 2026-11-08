@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
 # Activa HTTPS con Let's Encrypt para el Sistema Web Vida Salud (necesario para el microfono - CU29).
-# Uso (en el servidor EC2, dentro de la carpeta del proyecto):
-#   bash docker/https/activar-https.sh 18-218-0-2.sslip.io micorreo@gmail.com
-# sslip.io convierte el nombre en la IP publica (18-218-0-2 -> 18.218.0.2) sin comprar un dominio.
 set -euo pipefail
 
 DOMINIO="${1:?Indique el dominio, por ejemplo 18-218-0-2.sslip.io}"
@@ -30,7 +27,7 @@ docker compose up -d nginx
 docker compose exec nginx nginx -t
 docker compose restart nginx
 
-echo "==> 5/5 Programando la renovacion automatica (cron diario a las 03:30)"
+echo "==> 5/5 Programando la renovacion automatica"
 LINEA="30 3 * * * certbot renew --quiet --deploy-hook 'cd $PROYECTO && docker compose restart nginx'"
 ( sudo crontab -l 2>/dev/null | grep -v 'certbot renew' ; echo "$LINEA" ) | sudo crontab -
 
