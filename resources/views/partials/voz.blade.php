@@ -41,8 +41,18 @@
     };
     rec.onend = () => { escuchando = false; btn.classList.remove('escuchando'); };
     rec.onerror = e => {
-        const msg = e.error === 'not-allowed' ? 'Permita el acceso al micrófono para usar comandos de voz.' : 'No se pudo reconocer la voz. Intente de nuevo.';
-        mostrar('<span class="err">' + msg + '</span>', 4000);
+        console.warn('SpeechRecognition error:', e.error, e);
+        let msg = 'No se pudo reconocer la voz. Intente de nuevo.';
+        if (e.error === 'not-allowed') {
+            msg = 'Permita el acceso al micrófono en el navegador.';
+        } else if (e.error === 'no-speech') {
+            msg = 'No se detectó sonido. Hable más fuerte o acerque el micrófono.';
+        } else if (e.error === 'network') {
+            msg = 'Brave bloquea la API de voz de Google por privacidad. Abra esta página en Google Chrome.';
+        } else if (e.error === 'audio-capture') {
+            msg = 'No se detectó ningún micrófono activo en Windows.';
+        }
+        mostrar('<span class="err">' + msg + ' <small>[' + e.error + ']</small></span>', 5000);
     };
 
     rec.onresult = async ev => {
