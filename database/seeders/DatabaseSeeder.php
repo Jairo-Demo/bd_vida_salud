@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
             EspecialidadSeeder::class,
             DatosInicialesSeeder::class,
             CatalogoClinicoSeeder::class, // Ciclo 2: medicamentos y alergias (CU27)
+            DemoClinicaSeeder::class,     // Ciclo 2: citas en todos los estados, consultas, recetas y alergias del Word
         ]);
     }
 }
