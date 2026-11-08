@@ -17,6 +17,7 @@ use App\Http\Controllers\CatalogoController;
 use App\Http\Controllers\ConsultaController;
 use App\Http\Controllers\HistoriaClinicaController;
 use App\Http\Controllers\RecetaController;
+use App\Http\Controllers\ReporteController;
 use Illuminate\Support\Facades\Route;
 
 // Redireccion inicial al login
@@ -125,6 +126,12 @@ Route::middleware('auth')->group(function () {
         Route::get('historia-clinica', [HistoriaClinicaController::class, 'index'])->name('historia.index');
         Route::get('historia-clinica/{paciente}', [HistoriaClinicaController::class, 'show'])->name('historia.show');
         Route::get('recetas/{receta}', [RecetaController::class, 'show'])->name('recetas.show');
+    });
+
+    // Modulo P6: Reportes y exportacion PDF / CSV (CU21, CU22)
+    Route::middleware('rol:Administrador')->group(function () {
+        Route::get('reportes', [ReporteController::class, 'index'])->name('reportes.index');
+        Route::get('reportes/exportar/{formato}', [ReporteController::class, 'exportar'])->whereIn('formato', ['pdf', 'csv'])->name('reportes.exportar');
     });
 
     // Modulo P3 - Ciclo 2: Bloqueos de agenda (CU30)
