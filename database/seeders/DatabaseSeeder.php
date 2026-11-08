@@ -19,9 +19,7 @@ class DatabaseSeeder extends Seeder
             PermisoSeeder::class,
             EstadoCitaSeeder::class,
             EspecialidadSeeder::class,
-            DatosInicialesSeeder::class,
-            CatalogoClinicoSeeder::class, // Ciclo 2: medicamentos y alergias (CU27)
-            DemoClinicaSeeder::class,     // Ciclo 2: citas en todos los estados, consultas, recetas y alergias del Word
+            PoblacionCompletaSeeder::class, // Puebla las 25 tablas con mínimo 10 registros cada una (Ciclo 2 completo)
         ]);
     }
 }

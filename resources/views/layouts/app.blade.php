@@ -242,6 +242,55 @@
             .package-menu { display: none; }
             .user-pill { display: none; }
         }
+
+        /* Corrección de Paginación de Laravel (evita SVG gigantes y alinea controles) */
+        nav[role="navigation"] svg {
+            width: 16px !important;
+            height: 16px !important;
+            max-width: 16px !important;
+            max-height: 16px !important;
+            display: inline-block !important;
+            vertical-align: middle !important;
+        }
+        nav[role="navigation"] {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            font-size: 13px;
+            color: #475569;
+            padding: 10px 0;
+        }
+        nav[role="navigation"] > div {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        nav[role="navigation"] a, nav[role="navigation"] span {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 5px 12px;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+            background: #ffffff;
+            color: #334155;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        nav[role="navigation"] a:hover {
+            background: #f1f5f9;
+            border-color: #cbd5e1;
+        }
+        nav[role="navigation"] span[aria-current="page"] > span,
+        nav[role="navigation"] span[aria-current="page"] {
+            background: #0d9488 !important;
+            color: #ffffff !important;
+            border-color: #0d9488 !important;
+            font-weight: 600;
+        }
     </style>
     @stack('styles')
 </head>
