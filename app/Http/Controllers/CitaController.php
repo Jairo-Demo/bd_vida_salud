@@ -85,7 +85,15 @@ class CitaController extends Controller
         $fichaId = $request->input('ficha_id');
 
         // 2. Obtener datos de la Ficha seleccionada
-        $ficha = Ficha::findOrFail($fichaId);
+        $ficha = Ficha::with('horario')->findOrFail($fichaId);
+
+        // 2.0 La ficha debe pertenecer a una jornada activa del médico para ese día de la semana (RN13)
+        if (!$ficha->horario || (int) $ficha->horario->medico_id !== (int) $medicoId
+            || $ficha->horario->dia_semana !== $this->diaSemana($fecha) || !$ficha->horario->estado || !$ficha->estado) {
+            return back()->withInput()->withErrors([
+                'ficha_id' => 'La ficha seleccionada está fuera del horario de atención del médico para esa fecha (RN13).',
+            ]);
+        }
 
         // 2.1 La fecha no debe estar bloqueada en la agenda del médico (CU30 / RN)
         if ($bloqueo = $this->bloqueoQueAfecta($medicoId, $fecha, $ficha)) {

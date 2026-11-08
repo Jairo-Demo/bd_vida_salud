@@ -1,0 +1,35 @@
+# HTTPS (generado por docker/https/activar-https.sh). Necesario para el microfono (CU29).
+server {
+    listen 443 ssl;
+    http2 on;
+    server_name __DOMINIO__;
+    index index.php index.html;
+    root /var/www/public;
+    client_max_body_size 20M;
+
+    ssl_certificate     /etc/letsencrypt/live/__DOMINIO__/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/__DOMINIO__/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_session_cache shared:SSL:10m;
+
+    add_header Strict-Transport-Security "max-age=31536000" always;
+    add_header X-Content-Type-Options nosniff always;
+    add_header X-Frame-Options SAMEORIGIN always;
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location ~ \.php$ {
+        include fastcgi_params;
+        fastcgi_pass app:9000;
+        fastcgi_index index.php;
+        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+        fastcgi_param PATH_INFO $fastcgi_path_info;
+        fastcgi_param HTTPS on;   # Laravel genera los enlaces con https://
+    }
+
+    location ~ /\.(?!well-known).* {
+        deny all;
+    }
+}

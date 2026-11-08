@@ -38,10 +38,14 @@ services:
     container_name: vidasalud_nginx
     restart: unless-stopped
     ports:
-      - "8000:80"
+      - "8000:80"   # acceso original http://IP:8000
+      - "80:80"     # HTTP y validacion de Let's Encrypt
+      - "443:443"   # HTTPS (necesario para el microfono del comando de voz - CU29)
     volumes:
       - ./:/var/www
       - ./docker/nginx/conf.d:/etc/nginx/conf.d
+      - ./docker/certbot/www:/var/www/certbot:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
     networks:
       - vidasalud_network
     depends_on:
@@ -57,7 +61,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: admin123
     ports:
-      - "5432:5432"
+      - "5432:5432"   # abierto a proposito para conectarse con pgAdmin 4 (restringir la IP en el Security Group)
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
