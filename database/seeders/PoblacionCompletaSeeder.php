@@ -37,6 +37,17 @@ class PoblacionCompletaSeeder extends Seeder
 {
     public function run(): void
     {
+        // Sincronizar secuencias de PostgreSQL para evitar colisiones con IDs manuales de seeders previos
+        if (\Illuminate\Support\Facades\DB::getDriverName() === 'pgsql') {
+            foreach (['roles', 'permisos', 'estados_cita', 'especialidades'] as $tab) {
+                try {
+                    \Illuminate\Support\Facades\DB::statement("SELECT setval(pg_get_serial_sequence('{$tab}', 'id'), COALESCE((SELECT MAX(id) FROM {$tab}), 1), true);");
+                } catch (\Throwable $e) {
+                    // Ignorar si la secuencia no existe
+                }
+            }
+        }
+
         $rolAdmin = Rol::where('nombre', 'Administrador')->firstOrFail();
         $rolRecep = Rol::where('nombre', 'Recepcionista')->firstOrFail();
         $rolMed   = Rol::where('nombre', 'Medico')->firstOrFail();
