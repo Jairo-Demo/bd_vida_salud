@@ -16,6 +16,22 @@ services:
     depends_on:
       - postgres
 
+  # 1b. Tarea programada (CU31): ejecuta el Scheduler de Laravel (recordatorios:enviar cada hora)
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vidasalud_scheduler
+    restart: unless-stopped
+    working_dir: /var/www
+    command: php artisan schedule:work
+    volumes:
+      - ./:/var/www
+    networks:
+      - vidasalud_network
+    depends_on:
+      - postgres
+
   # 2. Servidor Web Nginx (Puerto 8000 expuesto al público)
   nginx:
     image: nginx:alpine

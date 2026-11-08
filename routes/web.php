@@ -6,6 +6,7 @@ use App\Http\Controllers\BitacoraController;
 use App\Http\Controllers\BloqueoAgendaController;
 use App\Http\Controllers\CitaController;
 use App\Http\Controllers\CitaEstadoController;
+use App\Http\Controllers\ComandoVozController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EspecialidadController;
 use App\Http\Controllers\HorarioAtencionController;
@@ -18,6 +19,7 @@ use App\Http\Controllers\CatalogoController;
 use App\Http\Controllers\ConsultaController;
 use App\Http\Controllers\HistoriaClinicaController;
 use App\Http\Controllers\RecetaController;
+use App\Http\Controllers\RecordatorioController;
 use App\Http\Controllers\RolController;
 use App\Http\Controllers\ReporteController;
 use Illuminate\Support\Facades\Route;
@@ -142,6 +144,14 @@ Route::middleware('auth')->group(function () {
         Route::get('historia-clinica', [HistoriaClinicaController::class, 'index'])->name('historia.index')->middleware('permiso:HISTORIA_CLINICA_VER');
         Route::get('historia-clinica/{paciente}', [HistoriaClinicaController::class, 'show'])->name('historia.show')->middleware('permiso:HISTORIA_CLINICA_VER');
         Route::get('recetas/{receta}', [RecetaController::class, 'show'])->name('recetas.show')->middleware('permiso:HISTORIA_CLINICA_VER');
+    });
+
+    // Modulo P8: Funciones opcionales - Comando de voz (CU29) y recordatorios (CU31)
+    Route::post('voz/comando', [ComandoVozController::class, 'ejecutar'])->name('voz.comando')->middleware('permiso:COMANDO_VOZ');
+    Route::middleware(['rol:Administrador', 'permiso:RECORDATORIOS_GESTIONAR'])->group(function () {
+        Route::get('recordatorios', [RecordatorioController::class, 'index'])->name('recordatorios.index');
+        Route::post('recordatorios/enviar', [RecordatorioController::class, 'enviar'])->name('recordatorios.enviar');
+        Route::post('recordatorios/{recordatorio}/reintentar', [RecordatorioController::class, 'reintentar'])->name('recordatorios.reintentar');
     });
 
     // Modulo P6: Reportes y exportacion PDF / CSV (CU21, CU22)

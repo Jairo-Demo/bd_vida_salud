@@ -332,6 +332,11 @@
     </div>
 </footer>
 
+@auth
+    @if(Route::has('voz.comando') && Auth::user()->tienePermiso('COMANDO_VOZ'))
+        @include('partials.voz')
+    @endif
+@endauth
 @stack('scripts')
 </body>
 </html>

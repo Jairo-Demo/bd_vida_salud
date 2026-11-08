@@ -13,6 +13,7 @@ use App\Models\Medico;
 use App\Models\Paciente;
 use App\Models\Recordatorio;
 use App\Services\BitacoraService;
+use App\Services\RecordatorioService;
 use Carbon\Carbon;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
@@ -154,6 +155,9 @@ class CitaController extends Controller
                 registroId: $nuevaCita->id,
                 detalles: "Cita programada {$codigo} para {$nuevaCita->paciente->nombre_completo} con Dr(a). {$nuevaCita->medico->nombre_completo} el {$fecha} ({$ficha->hora_inicio}-{$ficha->hora_fin})"
             );
+
+            // E. Recordatorio automático 24 horas antes (CU31 - alterno A)
+            RecordatorioService::programarProximaCita($nuevaCita);
 
             return $nuevaCita;
         });
@@ -360,7 +364,8 @@ class CitaController extends Controller
                     detalles: "Cita {$cita->codigo} reprogramada de {$anterior} a {$nuevo}. Motivo: {$motivo}"
                 );
 
-                // i) Aviso al paciente (CU31)
+                // i) Aviso al paciente y nuevo recordatorio 24 h antes (CU31)
+                RecordatorioService::programarProximaCita($cita->fresh());
                 Recordatorio::create([
                     'cita_id' => $cita->id,
                     'tipo' => 'Reprogramacion',
@@ -440,7 +445,8 @@ class CitaController extends Controller
                     BitacoraService::registrar('CANCELAR_CITA', 'citas', $cita->id, "Cita {$cita->codigo} cancelada. Motivo: {$motivo}");
                 }
 
-                // Aviso de cancelación al paciente (CU31)
+                // Aviso de cancelación al paciente; el recordatorio de próxima cita ya no se envía (CU31)
+                RecordatorioService::anularProximaCita($cita);
                 Recordatorio::create([
                     'cita_id' => $cita->id,
                     'tipo' => 'Cancelacion',
