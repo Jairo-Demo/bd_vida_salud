@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Cita;
+use App\Models\EstadoCita;
 use App\Models\Paciente;
 use App\Models\Persona;
 use App\Services\BitacoraService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
@@ -302,5 +305,59 @@ class PacienteController extends Controller
             : 'El paciente ha sido desactivado (su historial clínico permanece intacto).';
 
         return back()->with('success', $mensaje);
+    }
+
+    // =========================================================================
+    // CU08 - Consultar historial de citas (Ciclo 2)
+    // =========================================================================
+
+    /**
+     * [READ - Historial]: Citas del paciente con médico, especialidad, ficha y estado; filtros por estado y fechas.
+     * Recepción: elige al paciente (o llega desde su ficha, <<extend>> CU07). Paciente: solo el suyo (RN28).
+     */
+    public function historial(Request $request)
+    {
+        $request->validate([
+            'paciente' => 'nullable|integer|exists:pacientes,id',
+            'estado_id' => 'nullable|integer|exists:estados_cita,id',
+            'desde' => 'nullable|date',
+            'hasta' => 'nullable|date|after_or_equal:desde',
+        ], ['hasta.after_or_equal' => 'Rango de fechas inválido.']);
+
+        $esPaciente = (Auth::user()->rol->nombre ?? '') === 'Paciente';
+        if ($esPaciente) {
+            $propio = Paciente::where('persona_id', Auth::user()->persona_id)->first();
+            abort_if(!$propio, 403, 'Su usuario no está vinculado a un paciente.');
+            if ($request->filled('paciente') && (int) $request->input('paciente') !== $propio->id) {
+                abort(403, 'Acceso denegado: solo puede consultar su propio historial de citas.');
+            }
+            $paciente = $propio;
+        } elseif ($request->filled('paciente')) {
+            $paciente = Paciente::findOrFail($request->input('paciente'));
+        } else {
+            // Recepción sin paciente seleccionado: búsqueda (CU07)
+            $buscar = trim((string) $request->input('buscar'));
+            $pacientes = Paciente::with('persona')->withCount('citas')
+                ->when($buscar, fn ($q) => $q->where(fn ($w) => $w->where('codigo', 'ilike', "%{$buscar}%")
+                    ->orWhereHas('persona', fn ($p) => $p->where('ci', 'ilike', "%{$buscar}%")
+                        ->orWhere('nombres', 'ilike', "%{$buscar}%")->orWhere('apellidos', 'ilike', "%{$buscar}%"))))
+                ->orderBy('id', 'desc')->paginate(15)->withQueryString();
+            return view('pacientes.historial', ['paciente' => null, 'pacientes' => $pacientes, 'buscar' => $buscar]);
+        }
+
+        $paciente->load('persona');
+        $citas = Cita::with(['medico.persona', 'especialidad', 'estadoCita', 'ficha'])
+            ->where('paciente_id', $paciente->id)
+            ->when($request->input('estado_id'), fn ($q, $v) => $q->where('estado_id', $v))
+            ->when($request->input('desde'), fn ($q, $v) => $q->whereDate('fecha', '>=', $v))
+            ->when($request->input('hasta'), fn ($q, $v) => $q->whereDate('fecha', '<=', $v))
+            ->orderBy('fecha', 'desc')->orderBy('hora_inicio', 'desc')
+            ->paginate(20)->withQueryString();
+
+        $resumen = Cita::where('paciente_id', $paciente->id)->join('estados_cita', 'estados_cita.id', '=', 'citas.estado_id')
+            ->selectRaw('estados_cita.nombre, count(*) as total')->groupBy('estados_cita.nombre')->pluck('total', 'nombre');
+        $estados = EstadoCita::orderBy('id')->get();
+
+        return view('pacientes.historial', compact('paciente', 'citas', 'resumen', 'estados', 'esPaciente'));
     }
 }

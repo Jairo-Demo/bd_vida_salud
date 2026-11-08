@@ -40,6 +40,14 @@ class CitaController extends Controller
 
         // Parámetros opcionales precargados desde otras vistas
         $pacientePre = $request->input('paciente_id');
+
+        // El paciente solo puede agendarse citas a sí mismo
+        if (Auth::user()->rol->nombre === 'Paciente') {
+            $propio = $this->pacienteAutenticadoId();
+            abort_if(!$propio, 403, 'Su usuario no está vinculado a un paciente.');
+            $pacientes = $pacientes->where('id', $propio)->values();
+            $pacientePre = $propio;
+        }
         $medicoPre = $request->input('medico_id');
         $especialidadPre = $request->input('especialidad_id');
 
@@ -67,6 +75,11 @@ class CitaController extends Controller
 
         $medicoId = $request->input('medico_id');
         $pacienteId = $request->input('paciente_id');
+
+        // El paciente solo puede agendarse citas a sí mismo
+        if (Auth::user()->rol->nombre === 'Paciente' && (int) $pacienteId !== (int) $this->pacienteAutenticadoId()) {
+            return back()->withInput()->withErrors(['paciente_id' => 'Solo puede agendar citas a su propio nombre.']);
+        }
         $fecha = $request->input('fecha');
         $fichaId = $request->input('ficha_id');
 

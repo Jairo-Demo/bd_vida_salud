@@ -70,7 +70,23 @@ class User extends Authenticatable
 
     public function esMedico(): bool
     {
-        return $this->rol && strtolower($this->rol->nombre) === 'médico';
+        return $this->rol && in_array(strtolower($this->rol->nombre), ['medico', 'médico'], true);
+    }
+
+    /** Códigos de permisos del rol (se cargan una vez por petición). CU04 */
+    public function permisosCodigos(): array
+    {
+        if (!$this->rol) {
+            return [];
+        }
+        $this->rol->loadMissing('permisos');
+        return $this->rol->permisos->pluck('codigo')->all();
+    }
+
+    /** ¿El rol del usuario tiene el permiso? (asignado en la matriz de Roles y Permisos - CU04) */
+    public function tienePermiso(string $codigo): bool
+    {
+        return in_array($codigo, $this->permisosCodigos(), true);
     }
 
     public function esPaciente(): bool

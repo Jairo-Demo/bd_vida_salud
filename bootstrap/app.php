@@ -14,6 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Alias para proteccion de rutas por rol
         $middleware->alias([
             'rol' => \App\Http\Middleware\CheckRole::class,
+            'permiso' => \App\Http\Middleware\CheckPermiso::class, // CU04: permisos asignados al rol
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

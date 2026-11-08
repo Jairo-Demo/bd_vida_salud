@@ -186,6 +186,9 @@
     </div>
     <div class="btn-group">
         <a href="{{ route('pacientes.index') }}" class="btn-header btn-back">&larr; Volver al Listado</a>
+        @if(Route::has('historial.index') && in_array(Auth::user()->rol->nombre ?? '', ['Administrador', 'Recepcionista']))
+            <a href="{{ route('historial.index', ['paciente' => $paciente->id]) }}" class="btn-header btn-back">📜 Historial de citas</a>
+        @endif
         @if(in_array(Auth::user()->rol->nombre ?? '', ['Administrador', 'Recepcionista']))
             <a href="{{ route('pacientes.edit', $paciente) }}" class="btn-header btn-edit">Modificar</a>
             <form action="{{ route('pacientes.toggleEstado', $paciente) }}" method="POST" style="display: inline;" onsubmit="return confirm('¿Está seguro de cambiar el estado de este paciente?');">

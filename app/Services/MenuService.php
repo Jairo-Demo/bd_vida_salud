@@ -29,6 +29,7 @@ class MenuService
             $opcionesFiltradas = array_values(array_filter(
                 $paquete['opciones'],
                 fn ($opcion) => in_array($rolNombre, $opcion['roles'])
+                    && (empty($opcion['permiso']) || $usuario->tienePermiso($opcion['permiso']))
             ));
 
             // Si el paquete tiene al menos una opcion disponible para este rol, se incluye
@@ -65,6 +66,7 @@ class MenuService
                     [
                         'nombre' => 'Roles y Permisos',
                         'ruta' => 'roles.index',
+                        'permiso' => 'ROLES_GESTIONAR',
                         'descripcion' => 'Matriz de permisos asignados a cada rol del sistema.',
                         'roles' => ['Administrador'],
                         'ciclo' => 2,
@@ -106,6 +108,7 @@ class MenuService
                     [
                         'nombre' => 'Historial de Citas',
                         'ruta' => 'historial.index',
+                        'permiso' => 'PACIENTES_HISTORIAL',
                         'descripcion' => 'Citas del paciente con su estado, filtradas por fecha y estado.',
                         'roles' => ['Recepcionista', 'Paciente'],
                         'ciclo' => 2,
@@ -114,6 +117,7 @@ class MenuService
                     [
                         'nombre' => 'Mi Perfil',
                         'ruta' => 'perfil.show',
+                        'permiso' => 'PERFIL_GESTIONAR',
                         'descripcion' => 'Datos de contacto y cambio de contrasena del paciente.',
                         'roles' => ['Paciente'],
                         'ciclo' => 2,
@@ -155,6 +159,7 @@ class MenuService
                     [
                         'nombre' => 'Bloqueos de Agenda',
                         'ruta' => 'bloqueos.index',
+                        'permiso' => 'BLOQUEOS_GESTIONAR',
                         'descripcion' => 'Feriados, vacaciones y permisos en los que no se ofrecen fichas.',
                         'roles' => ['Administrador'],
                         'ciclo' => 2,
@@ -197,6 +202,7 @@ class MenuService
                     [
                         'nombre' => 'Agenda del Dia',
                         'ruta' => 'agenda.index',
+                        'permiso' => 'AGENDA_VER',
                         'descripcion' => 'Citas por medico y fecha; confirmar asistencia o registrar inasistencia.',
                         'roles' => ['Recepcionista', 'Medico'],
                         'ciclo' => 2,
@@ -214,6 +220,7 @@ class MenuService
                     [
                         'nombre' => 'Reportes de Citas',
                         'ruta' => 'reportes.index',
+                        'permiso' => 'REPORTES_GENERAR',
                         'descripcion' => 'Totales por estado, medico y especialidad en un periodo.',
                         'roles' => ['Administrador'],
                         'ciclo' => 2,
@@ -231,6 +238,7 @@ class MenuService
                     [
                         'nombre' => 'Registrar Atencion',
                         'ruta' => 'consultas.index',
+                        'permiso' => 'CITAS_ATENDER',
                         'descripcion' => 'Citas confirmadas del medico para registrar la consulta.',
                         'roles' => ['Medico'],
                         'ciclo' => 2,
@@ -239,6 +247,7 @@ class MenuService
                     [
                         'nombre' => 'Alergias y Antecedentes',
                         'ruta' => 'antecedentes.index',
+                        'permiso' => 'ANTECEDENTES_GESTIONAR',
                         'descripcion' => 'Alergias, antecedentes y medicamentos habituales del paciente.',
                         'roles' => ['Medico'],
                         'ciclo' => 2,
@@ -247,6 +256,7 @@ class MenuService
                     [
                         'nombre' => 'Recetas Medicas',
                         'ruta' => 'recetas.index',
+                        'permiso' => 'RECETAS_EMITIR',
                         'descripcion' => 'Emision de recetas con alerta de alergias e impresion en PDF.',
                         'roles' => ['Medico'],
                         'ciclo' => 2,
@@ -255,6 +265,7 @@ class MenuService
                     [
                         'nombre' => 'Catalogos Clinicos',
                         'ruta' => 'catalogos.index',
+                        'permiso' => 'CATALOGOS_GESTIONAR',
                         'descripcion' => 'Catalogos de medicamentos y alergias.',
                         'roles' => ['Administrador'],
                         'ciclo' => 2,
@@ -263,6 +274,7 @@ class MenuService
                     [
                         'nombre' => 'Historia Clinica',
                         'ruta' => 'historia.index',
+                        'permiso' => 'HISTORIA_CLINICA_VER',
                         'descripcion' => 'Consultas, diagnosticos, recetas, alergias y antecedentes del paciente.',
                         'roles' => ['Medico', 'Paciente'],
                         'ciclo' => 2,
@@ -280,6 +292,7 @@ class MenuService
                     [
                         'nombre' => 'Recordatorios de Citas',
                         'ruta' => 'recordatorios.index',
+                        'permiso' => 'RECORDATORIOS_GESTIONAR',
                         'descripcion' => 'Recordatorios enviados y pendientes por la tarea programada.',
                         'roles' => ['Administrador'],
                         'ciclo' => 2,
