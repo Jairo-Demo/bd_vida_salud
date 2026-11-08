@@ -154,34 +154,6 @@
             transform: translateY(-1px);
             box-shadow: 0 6px 16px rgba(2, 132, 199, 0.4);
         }
-        .card-footer {
-            background-color: #f8fafc;
-            border-top: 1px solid #f1f5f9;
-            padding: 18px 24px;
-            font-size: 12px;
-            color: #64748b;
-            text-align: center;
-        }
-        .demo-badges {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            justify-content: center;
-            margin-top: 10px;
-        }
-        .badge {
-            background-color: #e2e8f0;
-            color: #334155;
-            padding: 4px 8px;
-            border-radius: 6px;
-            font-size: 11px;
-            font-family: monospace;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        .badge:hover {
-            background-color: #cbd5e1;
-        }
     </style>
 </head>
 <body>
@@ -261,25 +233,7 @@
             </button>
         </form>
     </div>
-
-    <div class="card-footer">
-        <div><strong>Cuentas de Acceso Rápido:</strong></div>
-        <div class="demo-badges">
-            <span class="badge" onclick="fillCreds('admin', 'admin123')">Admin: admin</span>
-            <span class="badge" onclick="fillCreds('recepcion', 'recep123')">Recep: recepcion</span>
-            <span class="badge" onclick="fillCreds('dr.roca', 'medico123')">Médico: dr.roca</span>
-            <span class="badge" onclick="fillCreds('paciente1', 'paciente123')">Paciente: paciente1</span>
-        </div>
-    </div>
 </div>
-
-<script>
-    // Relleno automatico al hacer clic en las credenciales demo
-    function fillCreds(u, p) {
-        document.getElementById('login').value = u;
-        document.getElementById('password').value = p;
-    }
-</script>
 
 </body>
 </html>
