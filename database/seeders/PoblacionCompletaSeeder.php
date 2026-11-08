@@ -26,24 +26,25 @@ use App\Models\Rol;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 /**
  * Seeder Maestro de Población Completa (Ciclo 2):
  * Puebla las 25 tablas del sistema con un mínimo de 10 registros cada una,
- * garantizando coherencia referencial, datos realistas y total coincidencia con el Word.
+ * adaptado estrictamente al esquema y tipos de datos del sistema.
  */
 class PoblacionCompletaSeeder extends Seeder
 {
     public function run(): void
     {
-        // Sincronizar secuencias de PostgreSQL para evitar colisiones con IDs manuales de seeders previos
-        if (\Illuminate\Support\Facades\DB::getDriverName() === 'pgsql') {
+        // Sincronizar secuencias de PostgreSQL para evitar colisiones
+        if (DB::getDriverName() === 'pgsql') {
             foreach (['roles', 'permisos', 'estados_cita', 'especialidades'] as $tab) {
                 try {
-                    \Illuminate\Support\Facades\DB::statement("SELECT setval(pg_get_serial_sequence('{$tab}', 'id'), COALESCE((SELECT MAX(id) FROM {$tab}), 1), true);");
+                    DB::statement("SELECT setval(pg_get_serial_sequence('{$tab}', 'id'), COALESCE((SELECT MAX(id) FROM {$tab}), 1), true);");
                 } catch (\Throwable $e) {
-                    // Ignorar si la secuencia no existe
+                    // Ignorar si la tabla o secuencia no existe
                 }
             }
         }
@@ -81,7 +82,7 @@ class PoblacionCompletaSeeder extends Seeder
         }
 
         // =====================================================================
-        // 2. ADMINISTRADOR Y PERSONAL DE RECEPCIÓN (3 personas / 3 usuarios)
+        // 2. ADMINISTRADOR Y RECEPCIÓN (3 personas / 3 usuarios)
         // =====================================================================
         $pAdmin = Persona::updateOrCreate(
             ['ci' => '11325356'],
@@ -135,7 +136,7 @@ class PoblacionCompletaSeeder extends Seeder
 
             $med = Medico::updateOrCreate(
                 ['persona_id' => $pMed->id],
-                ['codigo' => $md['cod'], 'matricula_profesional' => $md['mat'], 'biografia' => 'Facultativo especialista con más de 10 años de experiencia clínica.', 'estado' => true]
+                ['codigo' => $md['cod'], 'registro_profesional' => $md['mat'], 'estado' => true]
             );
 
             User::updateOrCreate(
@@ -169,7 +170,6 @@ class PoblacionCompletaSeeder extends Seeder
                 ['hora_fin' => $hFin, 'duracion_cita_min' => 30, 'estado' => true]
             );
 
-            // Generar 8 fichas de 30 min por cada horario
             $inicio = Carbon::parse($hInicio);
             $fin    = Carbon::parse($hFin);
             $numFicha = 1;
@@ -239,42 +239,42 @@ class PoblacionCompletaSeeder extends Seeder
         // 6. CATÁLOGO CLÍNICO: ALERGIAS Y MEDICAMENTOS (10 Alergias, 12 Medicamentos)
         // =====================================================================
         $alergiasData = [
-            ['nombre' => 'Penicilina', 'tipo' => 'Medicamento', 'descripcion' => 'Reacción adversa severa a antibióticos betalactámicos.'],
-            ['nombre' => 'Amoxicilina', 'tipo' => 'Medicamento', 'descripcion' => 'Sensibilidad a derivados aminopenicilínicos.'],
-            ['nombre' => 'Ibuprofeno', 'tipo' => 'Medicamento', 'descripcion' => 'Hipersensibilidad a antiinflamatorios no esteroideos (AINEs).'],
-            ['nombre' => 'Acido acetilsalicilico', 'tipo' => 'Medicamento', 'descripcion' => 'Intolerancia a la aspirina y salicilatos.'],
-            ['nombre' => 'Diclofenaco', 'tipo' => 'Medicamento', 'descripcion' => 'Reacción alérgica a derivados fenilacéticos.'],
-            ['nombre' => 'Sulfametoxazol', 'tipo' => 'Medicamento', 'descripcion' => 'Alergia conocida a sulfonamidas antibacterianas.'],
-            ['nombre' => 'Latex', 'tipo' => 'Ambiental', 'descripcion' => 'Alergia por contacto con proteínas del caucho natural.'],
-            ['nombre' => 'Mariscos', 'tipo' => 'Alimento', 'descripcion' => 'Alergia grave a crustáceos y moluscos (tropomiosina).'],
-            ['nombre' => 'Polen', 'tipo' => 'Ambiental', 'descripcion' => 'Rinitis y conjuntivitis estacional por polen gramíneo.'],
-            ['nombre' => 'Mani', 'tipo' => 'Alimento', 'descripcion' => 'Hipersensibilidad alimentaria severa con riesgo de anafilaxia.'],
+            ['nombre' => 'Penicilina'],
+            ['nombre' => 'Amoxicilina'],
+            ['nombre' => 'Ibuprofeno'],
+            ['nombre' => 'Acido acetilsalicilico'],
+            ['nombre' => 'Diclofenaco'],
+            ['nombre' => 'Sulfametoxazol'],
+            ['nombre' => 'Latex'],
+            ['nombre' => 'Mariscos'],
+            ['nombre' => 'Polen'],
+            ['nombre' => 'Mani'],
         ];
 
         $alergiaModels = [];
         foreach ($alergiasData as $ad) {
-            $alergiaModels[] = Alergia::updateOrCreate(['nombre' => $ad['nombre']], $ad);
+            $alergiaModels[] = Alergia::updateOrCreate(['nombre' => $ad['nombre']], ['estado' => true]);
         }
 
         $medicamentosData = [
-            ['nombre_comercial' => 'Paracetamol', 'principio_activo' => 'Paracetamol', 'concentracion' => '500 mg', 'presentacion' => 'Comprimido'],
-            ['nombre_comercial' => 'Ibuprofeno', 'principio_activo' => 'Ibuprofeno', 'concentracion' => '400 mg', 'presentacion' => 'Comprimido'],
-            ['nombre_comercial' => 'Amoxil', 'principio_activo' => 'Amoxicilina', 'concentracion' => '500 mg', 'presentacion' => 'Cápsula'],
-            ['nombre_comercial' => 'Penicilina G Benzatinica', 'principio_activo' => 'Penicilina', 'concentracion' => '1.200.000 UI', 'presentacion' => 'Inyectable'],
-            ['nombre_comercial' => 'Aspirina', 'principio_activo' => 'Acido acetilsalicilico', 'concentracion' => '100 mg', 'presentacion' => 'Comprimido'],
-            ['nombre_comercial' => 'Diclofenaco Sodico', 'principio_activo' => 'Diclofenaco', 'concentracion' => '50 mg', 'presentacion' => 'Comprimido'],
-            ['nombre_comercial' => 'Loratadina', 'principio_activo' => 'Loratadina', 'concentracion' => '10 mg', 'presentacion' => 'Comprimido'],
-            ['nombre_comercial' => 'Omeprazol', 'principio_activo' => 'Omeprazol', 'concentracion' => '20 mg', 'presentacion' => 'Cápsula'],
-            ['nombre_comercial' => 'Metformina', 'principio_activo' => 'Metformina', 'concentracion' => '850 mg', 'presentacion' => 'Comprimido'],
-            ['nombre_comercial' => 'Losartan Potasico', 'principio_activo' => 'Losartan', 'concentracion' => '50 mg', 'presentacion' => 'Comprimido'],
-            ['nombre_comercial' => 'Salbutamol Aerosol', 'principio_activo' => 'Salbutamol', 'concentracion' => '100 mcg/dosis', 'presentacion' => 'Inhalador'],
-            ['nombre_comercial' => 'Bactrim Forte', 'principio_activo' => 'Sulfametoxazol + Trimetoprima', 'concentracion' => '800/160 mg', 'presentacion' => 'Comprimido'],
+            ['nombre_comercial' => 'Paracetamol', 'principio_activo' => 'Paracetamol', 'presentacion' => 'Comprimido 500 mg'],
+            ['nombre_comercial' => 'Ibuprofeno', 'principio_activo' => 'Ibuprofeno', 'presentacion' => 'Comprimido 400 mg'],
+            ['nombre_comercial' => 'Amoxil', 'principio_activo' => 'Amoxicilina', 'presentacion' => 'Cápsula 500 mg'],
+            ['nombre_comercial' => 'Penicilina G Benzatinica', 'principio_activo' => 'Penicilina', 'presentacion' => 'Inyectable 1.200.000 UI'],
+            ['nombre_comercial' => 'Aspirina', 'principio_activo' => 'Acido acetilsalicilico', 'presentacion' => 'Comprimido 100 mg'],
+            ['nombre_comercial' => 'Diclofenaco Sodico', 'principio_activo' => 'Diclofenaco', 'presentacion' => 'Comprimido 50 mg'],
+            ['nombre_comercial' => 'Loratadina', 'principio_activo' => 'Loratadina', 'presentacion' => 'Comprimido 10 mg'],
+            ['nombre_comercial' => 'Omeprazol', 'principio_activo' => 'Omeprazol', 'presentacion' => 'Cápsula 20 mg'],
+            ['nombre_comercial' => 'Metformina', 'principio_activo' => 'Metformina', 'presentacion' => 'Comprimido 850 mg'],
+            ['nombre_comercial' => 'Losartan Potasico', 'principio_activo' => 'Losartan', 'presentacion' => 'Comprimido 50 mg'],
+            ['nombre_comercial' => 'Salbutamol Aerosol', 'principio_activo' => 'Salbutamol', 'presentacion' => 'Inhalador 100 mcg/dosis'],
+            ['nombre_comercial' => 'Bactrim Forte', 'principio_activo' => 'Sulfametoxazol + Trimetoprima', 'presentacion' => 'Comprimido 800/160 mg'],
         ];
 
         $medFarmaModels = [];
         foreach ($medicamentosData as $mfd) {
             $medFarmaModels[] = Medicamento::updateOrCreate(
-                ['nombre_comercial' => $mfd['nombre_comercial'], 'concentracion' => $mfd['concentracion']],
+                ['nombre_comercial' => $mfd['nombre_comercial'], 'presentacion' => $mfd['presentacion']],
                 $mfd + ['estado' => true]
             );
         }
@@ -308,64 +308,66 @@ class PoblacionCompletaSeeder extends Seeder
         // 8. HISTORIA CLÍNICA: PACIENTE_MEDICAMENTO (10 registros)
         // =====================================================================
         $pacMedSeed = [
-            ['pac_idx' => 0, 'med_idx' => 9, 'tipo' => 'Habitual', 'obs' => 'Losartán 50mg diario en ayunas por hipertensión leve.'],
-            ['pac_idx' => 1, 'med_idx' => 3, 'tipo' => 'Contraindicado', 'obs' => 'PROHIBIDO: Alergia severa a penicilinas y derivados.'],
-            ['pac_idx' => 2, 'med_idx' => 1, 'tipo' => 'Contraindicado', 'obs' => 'Contraindicado por intolerancia gástrica y broncoespasmo.'],
-            ['pac_idx' => 3, 'med_idx' => 7, 'tipo' => 'Habitual', 'obs' => 'Omeprazol 20mg diario por reflujo gastroesofágico.'],
-            ['pac_idx' => 4, 'med_idx' => 10, 'tipo' => 'Habitual', 'obs' => 'Salbutamol en aerosol por asma bronquial intermitente.'],
-            ['pac_idx' => 5, 'med_idx' => 11, 'tipo' => 'Contraindicado', 'obs' => 'Contraindicado por hipersensibilidad a sulfas.'],
-            ['pac_idx' => 6, 'med_idx' => 8, 'tipo' => 'Habitual', 'obs' => 'Metformina 850mg con el almuerzo para control glucémico.'],
-            ['pac_idx' => 7, 'med_idx' => 6, 'tipo' => 'Habitual', 'obs' => 'Loratadina 10mg en época de floración.'],
-            ['pac_idx' => 8, 'med_idx' => 5, 'tipo' => 'Contraindicado', 'obs' => 'Evitar AINEs por antecedentes de úlcera péptica.'],
-            ['pac_idx' => 11, 'med_idx' => 4, 'tipo' => 'Contraindicado', 'obs' => 'Contraindicada aspirina por asma inducida.'],
+            ['pac_idx' => 0, 'med_idx' => 9, 'dosis' => '50 mg diario en ayunas'],
+            ['pac_idx' => 1, 'med_idx' => 3, 'dosis' => '1 inyectable cada 21 días'],
+            ['pac_idx' => 2, 'med_idx' => 1, 'dosis' => '400 mg cada 8 horas condicional'],
+            ['pac_idx' => 3, 'med_idx' => 7, 'dosis' => '20 mg diario antes del desayuno'],
+            ['pac_idx' => 4, 'med_idx' => 10, 'dosis' => '2 inhalaciones cada 12 horas'],
+            ['pac_idx' => 5, 'med_idx' => 11, 'dosis' => '1 comprimido diario'],
+            ['pac_idx' => 6, 'med_idx' => 8, 'dosis' => '850 mg con el almuerzo'],
+            ['pac_idx' => 7, 'med_idx' => 6, 'dosis' => '10 mg cada noche'],
+            ['pac_idx' => 8, 'med_idx' => 5, 'dosis' => '50 mg postprandial'],
+            ['pac_idx' => 11, 'med_idx' => 4, 'dosis' => '100 mg con el almuerzo'],
         ];
 
         foreach ($pacMedSeed as $pms) {
             if (isset($pacModels[$pms['pac_idx']], $medFarmaModels[$pms['med_idx']])) {
                 PacienteMedicamento::updateOrCreate(
                     ['paciente_id' => $pacModels[$pms['pac_idx']]->id, 'medicamento_id' => $medFarmaModels[$pms['med_idx']]->id],
-                    ['tipo' => $pms['tipo'], 'observacion' => $pms['obs']]
+                    ['dosis' => $pms['dosis'], 'fecha_inicio' => now()->subMonths(3)->toDateString()]
                 );
             }
         }
 
         // =====================================================================
-        // 9. HISTORIA CLÍNICA: ANTECEDENTES (10 registros)
+        // 9. HISTORIA CLÍNICA: ANTECEDENTES (10 registros - CU29)
+        // Enum: ['Personal', 'Familiar', 'Quirurgico', 'Cronico', 'Otro']
         // =====================================================================
         $antecedentesSeed = [
-            ['pac_idx' => 0, 'tipo' => 'Patológico', 'desc' => 'Hipertensión arterial esencial diagnosticada hace 3 años en tratamiento.'],
-            ['pac_idx' => 1, 'tipo' => 'Alergias', 'desc' => 'Antecedente de urticaria severa infantil tras administración de ampicilina.'],
-            ['pac_idx' => 2, 'tipo' => 'Quirúrgico', 'desc' => 'Apendicectomía laparoscópica no complicada en 2018.'],
+            ['pac_idx' => 0, 'tipo' => 'Cronico', 'desc' => 'Hipertensión arterial esencial diagnosticada hace 3 años en tratamiento.'],
+            ['pac_idx' => 1, 'tipo' => 'Personal', 'desc' => 'Antecedente de urticaria severa infantil tras administración de ampicilina.'],
+            ['pac_idx' => 2, 'tipo' => 'Quirurgico', 'desc' => 'Apendicectomía laparoscópica no complicada en 2018.'],
             ['pac_idx' => 3, 'tipo' => 'Familiar', 'desc' => 'Madre con antecedente de diabetes mellitus tipo 2.'],
-            ['pac_idx' => 4, 'tipo' => 'Patológico', 'desc' => 'Asma bronquial alérgica de inicio en la infancia.'],
-            ['pac_idx' => 5, 'tipo' => 'Quirúrgico', 'desc' => 'Cesárea segmentaria transversa en 2021.'],
-            ['pac_idx' => 6, 'tipo' => 'Patológico', 'desc' => 'Diabetes mellitus tipo 2 bien controlada con dieta y fármacos orales.'],
+            ['pac_idx' => 4, 'tipo' => 'Cronico', 'desc' => 'Asma bronquial alérgica de inicio en la infancia.'],
+            ['pac_idx' => 5, 'tipo' => 'Quirurgico', 'desc' => 'Cesárea segmentaria transversa en 2021.'],
+            ['pac_idx' => 6, 'tipo' => 'Cronico', 'desc' => 'Diabetes mellitus tipo 2 bien controlada con fármacos orales.'],
             ['pac_idx' => 7, 'tipo' => 'Familiar', 'desc' => 'Padre con cardiopatía isquémica y colocación de stent coronario.'],
-            ['pac_idx' => 8, 'tipo' => 'Patológico', 'desc' => 'Gastritis crónica atrófica confirmada por endoscopía.'],
-            ['pac_idx' => 9, 'tipo' => 'Tóxico', 'desc' => 'Tabaquismo social activo (1 a 2 cigarrillos semanales).'],
+            ['pac_idx' => 8, 'tipo' => 'Personal', 'desc' => 'Gastritis crónica atrófica confirmada por endoscopía.'],
+            ['pac_idx' => 9, 'tipo' => 'Otro', 'desc' => 'Tabaquismo social activo (1 a 2 cigarrillos semanales).'],
         ];
 
         foreach ($antecedentesSeed as $as) {
             if (isset($pacModels[$as['pac_idx']])) {
                 Antecedente::updateOrCreate(
                     ['paciente_id' => $pacModels[$as['pac_idx']]->id, 'descripcion' => $as['desc']],
-                    ['tipo' => $as['tipo'], 'fecha_diagnostico' => now()->subYears(2)->toDateString()]
+                    ['usuario_id' => $userAdmin->id, 'tipo' => $as['tipo'], 'fecha_registro' => now()->subYears(2)->toDateString()]
                 );
             }
         }
 
         // =====================================================================
         // 10. BLOQUEOS DE AGENDA (10 registros - CU30)
+        // Enum: ['Feriado', 'Vacaciones', 'Permiso', 'Otro']
         // =====================================================================
         $bloqueosSeed = [
-            ['med_idx' => 0, 'tipo' => 'Capacitación', 'dias' => 10, 'mot' => 'Congreso Nacional de Medicina Interna y Atención Primaria.'],
+            ['med_idx' => 0, 'tipo' => 'Permiso', 'dias' => 10, 'mot' => 'Congreso Nacional de Medicina Interna y Atención Primaria.'],
             ['med_idx' => 1, 'tipo' => 'Vacaciones', 'dias' => 15, 'mot' => 'Periodo de descanso anual programado.'],
             ['med_idx' => 2, 'tipo' => 'Permiso', 'dias' => 20, 'mot' => 'Permiso institucional para jornada científica odontológica.'],
             ['med_idx' => 3, 'tipo' => 'Feriado', 'dias' => 25, 'mot' => 'Feriado nacional de efeméride departamental.'],
-            ['med_idx' => 4, 'tipo' => 'Capacitación', 'dias' => 30, 'mot' => 'Taller intensivo de artroscopía y cirugía ortopédica.'],
+            ['med_idx' => 4, 'tipo' => 'Permiso', 'dias' => 30, 'mot' => 'Taller intensivo de artroscopía y cirugía ortopédica.'],
             ['med_idx' => 5, 'tipo' => 'Vacaciones', 'dias' => 35, 'mot' => 'Vacaciones reglamentarias de fin de año.'],
             ['med_idx' => 6, 'tipo' => 'Permiso', 'dias' => 40, 'mot' => 'Comisión académica de postgrado universitario.'],
-            ['med_idx' => 7, 'tipo' => 'Capacitación', 'dias' => 45, 'mot' => 'Seminario internacional de retina y microcirugía ocular.'],
+            ['med_idx' => 7, 'tipo' => 'Permiso', 'dias' => 45, 'mot' => 'Seminario internacional de retina y microcirugía ocular.'],
             ['med_idx' => 8, 'tipo' => 'Permiso', 'dias' => 50, 'mot' => 'Asistencia a reunión del Colegio Médico Departamental.'],
             ['med_idx' => 9, 'tipo' => 'Otro', 'dias' => 55, 'mot' => 'Mantenimiento de consultorio y equipos médicos.'],
         ];
@@ -375,7 +377,13 @@ class PoblacionCompletaSeeder extends Seeder
                 $fIni = Carbon::today()->addDays($bs['dias']);
                 BloqueoAgenda::updateOrCreate(
                     ['medico_id' => $medModels[$bs['med_idx']]->id, 'fecha_inicio' => $fIni->toDateString()],
-                    ['fecha_fin' => $fIni->copy()->addDay()->toDateString(), 'tipo' => $bs['tipo'], 'dia_completo' => true, 'motivo' => $bs['mot']]
+                    [
+                        'usuario_id' => $userAdmin->id,
+                        'fecha_fin' => $fIni->copy()->addDay()->toDateString(),
+                        'tipo' => $bs['tipo'],
+                        'motivo' => $bs['mot'],
+                        'estado' => true,
+                    ]
                 );
             }
         }
@@ -398,7 +406,7 @@ class PoblacionCompletaSeeder extends Seeder
             ['cod' => 'CM-0008', 'pac' => 6, 'med' => 0, 'esp' => 0, 'estado' => $estAten, 'dias' => -2, 'fnum' => 1, 'mot' => 'Epigastralgia urente postprandial y acidez estomacal.'],
             ['cod' => 'CM-0009', 'pac' => 1, 'med' => 0, 'esp' => 0, 'estado' => $estAten, 'dias' => -2, 'fnum' => 2, 'mot' => 'Evaluación de dolor articular y chequeo general.'],
 
-            // Otros médicos también tienen citas atendidas con recetas
+            // Otros médicos especialistas
             ['cod' => 'CM-0010', 'pac' => 7, 'med' => 1, 'esp' => 2, 'estado' => $estAten, 'dias' => -1, 'fnum' => 1, 'mot' => 'Control ginecológico y papanicolau de rutina.'],
             ['cod' => 'CM-0011', 'pac' => 8, 'med' => 2, 'esp' => 3, 'estado' => $estAten, 'dias' => -2, 'fnum' => 1, 'mot' => 'Caries oclusal en premolar superior y obturación.'],
             ['cod' => 'CM-0012', 'pac' => 9, 'med' => 3, 'esp' => 4, 'estado' => $estAten, 'dias' => -3, 'fnum' => 1, 'mot' => 'Control de hipertensión y ajuste de fármacos.'],
@@ -468,18 +476,18 @@ class PoblacionCompletaSeeder extends Seeder
         // =====================================================================
         $consultasData = [
             // Citas atendidas del Dr. Alejandro Roca (indices 5, 6, 7, 8)
-            ['c_idx' => 5, 'diag' => 'Cefalea tensional moderada por estrés laboral', 'sint' => 'Cefalea opresiva en banda, fotofobia leve, tensión occipital.', 'pa' => '120/80', 't' => 36.6, 'p' => 70.2, 'ind' => 'Reposo, hidratación oral de 2L/día y pausas visuales.', 'farma' => 0, 'dosis' => 'Paracetamol 500 mg cada 8 horas por 3 días.'],
-            ['c_idx' => 6, 'diag' => 'Faringoamigdalitis aguda eritematosa', 'sint' => 'Odinofagia intensa, exudado amigdalino, fiebre 38.5°C.', 'pa' => '115/75', 't' => 38.5, 'p' => 64.0, 'ind' => 'Gargarismos salinos y reposo relativo.', 'farma' => 2, 'dosis' => 'Amoxil 500 mg cada 8 horas por 7 días.'],
-            ['c_idx' => 7, 'diag' => 'Gastritis aguda erosiva no complicada', 'sint' => 'Dolor punzante epigástrico y acidez estomacal matutina.', 'pa' => '125/80', 't' => 36.8, 'p' => 78.5, 'ind' => 'Dieta blanda gástrica, suspender irritantes.', 'farma' => 7, 'dosis' => 'Omeprazol 20 mg en ayunas por 14 días.'],
-            ['c_idx' => 8, 'diag' => 'Artralgia mecánica de rodilla bilateral', 'sint' => 'Dolor articular post esfuerzo sin signos de derrame sinovial.', 'pa' => '120/75', 't' => 36.5, 'p' => 62.0, 'ind' => 'Crioterapia 15 minutos dos veces al día y reposo.', 'farma' => 1, 'dosis' => 'Ibuprofeno 400 mg cada 12 horas con comidas por 4 días.'],
+            ['c_idx' => 5, 'diag' => 'Cefalea tensional moderada por estrés laboral', 'sint' => 'Cefalea opresiva en banda, fotofobia leve, tensión occipital.', 'pa' => '120/80', 't' => 36.6, 'p' => 70.2, 'ind' => 'Reposo, hidratación oral de 2L/día y pausas visuales.', 'farma' => 0, 'dosis' => '1 comprimido', 'freq' => 'Cada 8 horas por 3 días'],
+            ['c_idx' => 6, 'diag' => 'Faringoamigdalitis aguda eritematosa', 'sint' => 'Odinofagia intensa, exudado amigdalino, fiebre 38.5°C.', 'pa' => '115/75', 't' => 38.5, 'p' => 64.0, 'ind' => 'Gargarismos salinos y reposo relativo.', 'farma' => 2, 'dosis' => '1 cápsula', 'freq' => 'Cada 8 horas por 7 días'],
+            ['c_idx' => 7, 'diag' => 'Gastritis aguda erosiva no complicada', 'sint' => 'Dolor punzante epigástrico y acidez estomacal matutina.', 'pa' => '125/80', 't' => 36.8, 'p' => 78.5, 'ind' => 'Dieta blanda gástrica, suspender irritantes.', 'farma' => 7, 'dosis' => '1 cápsula', 'freq' => 'En ayunas por 14 días'],
+            ['c_idx' => 8, 'diag' => 'Artralgia mecánica de rodilla bilateral', 'sint' => 'Dolor articular post esfuerzo sin signos de derrame sinovial.', 'pa' => '120/75', 't' => 36.5, 'p' => 62.0, 'ind' => 'Crioterapia 15 minutos dos veces al día y reposo.', 'farma' => 1, 'dosis' => '1 comprimido', 'freq' => 'Cada 12 horas con comidas por 4 días'],
 
             // Citas atendidas de los demás médicos especialistas (indices 9 a 14)
-            ['c_idx' => 9, 'diag' => 'Control prenatal de 2do trimestre eutócico', 'sint' => 'Asintomática, movimientos fetales activos normales.', 'pa' => '110/70', 't' => 36.5, 'p' => 63.5, 'ind' => 'Continuar suplementación con ácido fólico y ecografía morfométrica.', 'farma' => 6, 'dosis' => 'Loratadina 10 mg condicional si presenta rinitis gestacional.'],
-            ['c_idx' => 10, 'diag' => 'Caries dental oclusal profunda en pieza 2.4', 'sint' => 'Sensibilidad dental al frío y calor sin compromiso pulpar.', 'pa' => '120/80', 't' => 36.7, 'p' => 81.0, 'ind' => 'Cepillado dental con dentífrico fluorado e hilo dental.', 'farma' => 5, 'dosis' => 'Diclofenaco 50 mg cada 12 horas en caso de molestia post operatoria.'],
-            ['c_idx' => 11, 'diag' => 'Hipertensión arterial estadio 1 compensada', 'sint' => 'Control rutinario de cifras tensionales, sin síntomas agudos.', 'pa' => '135/85', 't' => 36.4, 'p' => 84.5, 'ind' => 'Dieta hiposódica y caminata diaria de 30 minutos.', 'farma' => 9, 'dosis' => 'Losartán Potásico 50 mg cada mañana.'],
-            ['c_idx' => 12, 'diag' => 'Lumbalgia mecánica con contractura muscular', 'sint' => 'Dolor lumbar a la flexión tras cargar peso.', 'pa' => '125/80', 't' => 36.6, 'p' => 86.0, 'ind' => 'Calor seco local y faja de soporte durante actividad.', 'farma' => 5, 'dosis' => 'Diclofenaco 50 mg cada 12 horas por 5 días.'],
-            ['c_idx' => 13, 'diag' => 'Dermatitis atópica en placas pruriginosas', 'sint' => 'Placas eritematosas y prurito intenso en flexuras de codos.', 'pa' => '118/78', 't' => 36.5, 'p' => 58.0, 'ind' => 'Crema emoliente hipoalergénica dos veces al día.', 'farma' => 6, 'dosis' => 'Loratadina 10 mg una vez al día por 10 días.'],
-            ['c_idx' => 14, 'diag' => 'Cefalea tipo tensión recurrente', 'sint' => 'Pesadez cervical y dolor bilateral holocraneano.', 'pa' => '120/80', 't' => 36.6, 'p' => 72.0, 'ind' => 'Técnicas de manejo de estrés y corrección ergonómica.', 'farma' => 0, 'dosis' => 'Paracetamol 500 mg cada 8 horas ante episodios de dolor.'],
+            ['c_idx' => 9, 'diag' => 'Control prenatal de 2do trimestre eutócico', 'sint' => 'Asintomática, movimientos fetales activos normales.', 'pa' => '110/70', 't' => 36.5, 'p' => 63.5, 'ind' => 'Continuar suplementación con ácido fólico y ecografía morfométrica.', 'farma' => 6, 'dosis' => '1 comprimido', 'freq' => 'Condicional si presenta rinitis gestacional'],
+            ['c_idx' => 10, 'diag' => 'Caries dental oclusal profunda en pieza 2.4', 'sint' => 'Sensibilidad dental al frío y calor sin compromiso pulpar.', 'pa' => '120/80', 't' => 36.7, 'p' => 81.0, 'ind' => 'Cepillado dental con dentífrico fluorado e hilo dental.', 'farma' => 5, 'dosis' => '1 comprimido', 'freq' => 'Cada 12 horas en caso de molestia'],
+            ['c_idx' => 11, 'diag' => 'Hipertensión arterial estadio 1 compensada', 'sint' => 'Control rutinario de cifras tensionales, sin síntomas agudos.', 'pa' => '135/85', 't' => 36.4, 'p' => 84.5, 'ind' => 'Dieta hiposódica y caminata diaria de 30 minutos.', 'farma' => 9, 'dosis' => '1 comprimido', 'freq' => 'Cada mañana de forma continua'],
+            ['c_idx' => 12, 'diag' => 'Lumbalgia mecánica con contractura muscular', 'sint' => 'Dolor lumbar a la flexión tras cargar peso.', 'pa' => '125/80', 't' => 36.6, 'p' => 86.0, 'ind' => 'Calor seco local y faja de soporte durante actividad.', 'farma' => 5, 'dosis' => '1 comprimido', 'freq' => 'Cada 12 horas por 5 días tras comidas'],
+            ['c_idx' => 13, 'diag' => 'Dermatitis atópica en placas pruriginosas', 'sint' => 'Placas eritematosas y prurito intenso en flexuras de codos.', 'pa' => '118/78', 't' => 36.5, 'p' => 58.0, 'ind' => 'Crema emoliente hipoalergénica dos veces al día.', 'farma' => 6, 'dosis' => '1 comprimido', 'freq' => 'Una vez al día por 10 días'],
+            ['c_idx' => 14, 'diag' => 'Cefalea tipo tensión recurrente', 'sint' => 'Pesadez cervical y dolor bilateral holocraneano.', 'pa' => '120/80', 't' => 36.6, 'p' => 72.0, 'ind' => 'Técnicas de manejo de estrés y corrección ergonómica.', 'farma' => 0, 'dosis' => '1 comprimido', 'freq' => 'Cada 8 horas ante episodios de dolor'],
         ];
 
         foreach ($consultasData as $idx => $cd) {
@@ -513,8 +521,8 @@ class PoblacionCompletaSeeder extends Seeder
             DetalleReceta::updateOrCreate(
                 ['receta_id' => $receta->id, 'medicamento_id' => $medF->id],
                 [
-                    'dosis' => $medF->concentracion ?? '1 comprimido',
-                    'frecuencia' => $cd['dosis'],
+                    'dosis' => $cd['dosis'],
+                    'frecuencia' => $cd['freq'],
                     'duracion_tratamiento' => '3 a 7 días',
                     'cantidad' => 10,
                     'indicaciones' => 'Ingerir con abundante agua según horario establecido.',
@@ -524,17 +532,19 @@ class PoblacionCompletaSeeder extends Seeder
 
         // =====================================================================
         // 13. RECORDATORIOS DE CITAS (10 registros - CU31)
+        // Enum tipo: ['Proxima cita', 'Reprogramacion', 'Cancelacion']
+        // Enum estado: ['Pendiente', 'Enviado', 'Fallido']
         // =====================================================================
         foreach ($citaModels as $idx => $c) {
             if ($idx >= 10) break;
             Recordatorio::updateOrCreate(
-                ['cita_id' => $c->id, 'canal' => ($idx % 2 === 0 ? 'Email' : 'WhatsApp')],
+                ['cita_id' => $c->id],
                 [
-                    'destinatario' => $c->paciente->persona->correo ?? 'paciente@gmail.com',
-                    'mensaje' => "Recordatorio: Tiene cita {$c->codigo} con {$c->medico->persona->nombre_completo} el {$c->fecha} a las {$c->hora_inicio}.",
-                    'estado' => ($idx < 5 ? 'Enviado' : 'Pendiente'),
+                    'tipo' => 'Proxima cita',
+                    'mensaje' => "Recordatorio: Estimado paciente, le recordamos su cita {$c->codigo} con {$c->medico->persona->nombre_completo} para el {$c->fecha} a las {$c->hora_inicio}.",
                     'fecha_programada' => now()->subHours(24 - $idx),
                     'fecha_envio' => ($idx < 5 ? now()->subHours(20 - $idx) : null),
+                    'estado' => ($idx < 5 ? 'Enviado' : 'Pendiente'),
                 ]
             );
         }
@@ -567,7 +577,7 @@ class PoblacionCompletaSeeder extends Seeder
                 'tabla_afectada' => $ba['tab'],
                 'registro_id' => $idx + 1,
                 'detalles' => $ba['det'],
-                'ip_origen' => '18.218.0.2',
+                'ip' => '18.218.0.2',
                 'canal' => 'web',
                 'fecha_hora' => now()->subHours(15 - $idx),
             ]);
